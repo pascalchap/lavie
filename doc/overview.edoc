@@ -1,0 +1,12 @@
+@author Pascal Chapier <pascalchap@gmail.com>
+@copyright 2013 Pascal Chapier
+@version 0.1.0
+@title Le jeu de la vie
+@doc <b>Le jeu de la vie</b> est une simulation dans un espace 2D du comportement de "cellules" dont la naissance et la mort sont r&#233;gies par des r&#232;gles simples li&#233;es &#224; leur voisinage. Cette impl&#233;mentation simule un monde torique de NxM cases, avec par d&#233;faut les r&#232;gles de base suivantes
+<li>
+<em><b>sexualit&#233; :</b></em> cellules assexu&#233;es
+</li><li>
+<em><b>naissance :</b></em>  un case vide verra la naissance d'une cellule si exactement 3 de ses 8 cases voisines sont occup&#233;es
+</li><li>
+<em><b>mort :</b></em> une cellule meurt si moins de 2 ou plus de 3 de ses 8 cases voisines sont occup&#233;es
+</li>

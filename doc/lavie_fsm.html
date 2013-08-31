@@ -1,0 +1,224 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<title>Module lavie_fsm</title>
+<link rel="stylesheet" type="text/css" href="stylesheet.css" title="EDoc">
+</head>
+<body bgcolor="white">
+<div class="navbar"><a name="#navbar_top"></a><table width="100%" border="0" cellspacing="0" cellpadding="2" summary="navigation bar"><tr><td><a href="overview-summary.html" target="overviewFrame">Overview</a></td><td><a href="http://www.erlang.org/"><img src="erlang.png" align="right" border="0" alt="erlang logo"></a></td></tr></table></div>
+<hr>
+
+<h1>Module lavie_fsm</h1>
+<ul class="index"><li><a href="#description">Description</a></li><li><a href="#index">Function Index</a></li><li><a href="#functions">Function Details</a></li></ul>.
+<p>Copyright © (C) $year, $company</p>
+
+<p><b>Behaviours:</b> <a href="gen_fsm.html"><tt>gen_fsm</tt></a>.</p>
+<p><b>Authors:</b> $author.</p>
+
+<h2><a name="description">Description</a></h2>
+  
+<h2><a name="index">Function Index</a></h2>
+<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#born_finished-0">born_finished/0</a></td><td></td></tr>
+<tr><td valign="top"><a href="#code_change-4">code_change/4</a></td><td>
+  Convert process state when code is changed.</td></tr>
+<tr><td valign="top"><a href="#config-2">config/2</a></td><td>  
+There should be one instance of this function for each possible  
+state name.</td></tr>
+<tr><td valign="top"><a href="#config_done-0">config_done/0</a></td><td></td></tr>
+<tr><td valign="top"><a href="#dclick-0">dclick/0</a></td><td></td></tr>
+<tr><td valign="top"><a href="#handle_event-3">handle_event/3</a></td><td>
+  Whenever a gen_fsm receives an event sent using
+  gen_fsm:send_all_state_event/2, this function is called to handle
+  the event.</td></tr>
+<tr><td valign="top"><a href="#handle_info-3">handle_info/3</a></td><td>
+  This function is called by a gen_fsm when it receives any
+  message other than a synchronous or asynchronous event
+  (or a system message).</td></tr>
+<tr><td valign="top"><a href="#handle_sync_event-4">handle_sync_event/4</a></td><td>
+  Whenever a gen_fsm receives an event sent using
+  gen_fsm:sync_send_all_state_event/[2,3], this function is called
+  to handle the event.</td></tr>
+<tr><td valign="top"><a href="#idle-0">idle/0*</a></td><td></td></tr>
+<tr><td valign="top"><a href="#idle-2">idle/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#info_finished-0">info_finished/0</a></td><td></td></tr>
+<tr><td valign="top"><a href="#init-1">init/1</a></td><td>
+  Whenever a gen_fsm is started using gen_fsm:start/[3,4] or
+  gen_fsm:start_link/[3,4], this function is called by the new
+  process to initialize.</td></tr>
+<tr><td valign="top"><a href="#middle_down-0">middle_down/0</a></td><td></td></tr>
+<tr><td valign="top"><a href="#newCycle-1">newCycle/1*</a></td><td></td></tr>
+<tr><td valign="top"><a href="#period-1">period/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#right_down-0">right_down/0</a></td><td></td></tr>
+<tr><td valign="top"><a href="#start_link-0">start_link/0</a></td><td>
+  Creates a gen_fsm process which calls Module:init/1 to
+  initialize.</td></tr>
+<tr><td valign="top"><a href="#terminate-3">terminate/3</a></td><td>
+  This function is called by a gen_fsm when it is about to
+  terminate.</td></tr>
+<tr><td valign="top"><a href="#update_finished-0">update_finished/0</a></td><td></td></tr>
+<tr><td valign="top"><a href="#wait_20ms-0">wait_20ms/0*</a></td><td></td></tr>
+<tr><td valign="top"><a href="#wait_born_finished-2">wait_born_finished/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#wait_info_finished-2">wait_info_finished/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#wait_update_finished-2">wait_update_finished/2</a></td><td></td></tr>
+</table>
+
+<h2><a name="functions">Function Details</a></h2>
+
+<h3 class="function"><a name="born_finished-0">born_finished/0</a></h3>
+<div class="spec">
+<p><tt>born_finished() -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="code_change-4">code_change/4</a></h3>
+<div class="spec">
+<p><tt>code_change(OldVsn, StateName, State, Extra) -&gt; {ok, StateName, NewState}</tt><br></p>
+</div><p>
+  Convert process state when code is changed
+ </p>
+
+<h3 class="function"><a name="config-2">config/2</a></h3>
+<div class="spec">
+<p><tt>config(X1, State) -&gt; any()</tt></p>
+</div><p><p>  
+There should be one instance of this function for each possible  
+state name. Whenever a gen_fsm receives an event sent using  
+gen_fsm:send_event/2, the instance of this function with the same  
+name as the current state name StateName is called to handle  
+the event. It is also called if a timeout occurs.</p>
+ 
+  generic spec state_name(Event, State) -&gt;
+  {next_state, NextStateName, NextState} |
+  {next_state, NextStateName, NextState, Timeout} |
+  {stop, Reason, NewState}</p>
+
+<h3 class="function"><a name="config_done-0">config_done/0</a></h3>
+<div class="spec">
+<p><tt>config_done() -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="dclick-0">dclick/0</a></h3>
+<div class="spec">
+<p><tt>dclick() -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="handle_event-3">handle_event/3</a></h3>
+<div class="spec">
+<p><tt>handle_event(Event, StateName, State) -&gt; {next_state, NextStateName, NextState} | {next_state, NextStateName, NextState, Timeout} | {stop, Reason, NewState}</tt><br></p>
+</div><p>
+  Whenever a gen_fsm receives an event sent using
+  gen_fsm:send_all_state_event/2, this function is called to handle
+  the event.
+ </p>
+
+<h3 class="function"><a name="handle_info-3">handle_info/3</a></h3>
+<div class="spec">
+<p><tt>handle_info(Info, StateName, State) -&gt; {next_state, NextStateName, NextState} | {next_state, NextStateName, NextState, Timeout} | {stop, Reason, NewState}</tt><br></p>
+</div><p>
+  This function is called by a gen_fsm when it receives any
+  message other than a synchronous or asynchronous event
+  (or a system message).
+ </p>
+
+<h3 class="function"><a name="handle_sync_event-4">handle_sync_event/4</a></h3>
+<div class="spec">
+<p><tt>handle_sync_event(Event, From, StateName, State) -&gt; {next_state, NextStateName, NextState} | {next_state, NextStateName, NextState, Timeout} | {reply, Reply, NextStateName, NextState} | {reply, Reply, NextStateName, NextState, Timeout} | {stop, Reason, NewState} | {stop, Reason, Reply, NewState}</tt><br></p>
+</div><p>
+  Whenever a gen_fsm receives an event sent using
+  gen_fsm:sync_send_all_state_event/[2,3], this function is called
+  to handle the event.
+ </p>
+
+<h3 class="function"><a name="idle-0">idle/0 *</a></h3>
+<div class="spec">
+<p><tt>idle() -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="idle-2">idle/2</a></h3>
+<div class="spec">
+<p><tt>idle(X1, State) -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="info_finished-0">info_finished/0</a></h3>
+<div class="spec">
+<p><tt>info_finished() -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="init-1">init/1</a></h3>
+<div class="spec">
+<p><tt>init(X1::Args) -&gt; {ok, StateName, State} | {ok, StateName, State, Timeout} | ignore | {stop, StopReason}</tt><br></p>
+</div><p>
+  Whenever a gen_fsm is started using gen_fsm:start/[3,4] or
+  gen_fsm:start_link/[3,4], this function is called by the new
+  process to initialize.
+ </p>
+
+<h3 class="function"><a name="middle_down-0">middle_down/0</a></h3>
+<div class="spec">
+<p><tt>middle_down() -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="newCycle-1">newCycle/1 *</a></h3>
+<div class="spec">
+<p><tt>newCycle(T) -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="period-1">period/1</a></h3>
+<div class="spec">
+<p><tt>period(T) -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="right_down-0">right_down/0</a></h3>
+<div class="spec">
+<p><tt>right_down() -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="start_link-0">start_link/0</a></h3>
+<div class="spec">
+<p><tt>start_link() -&gt; {ok, Pid} | ignore | {error, Error}</tt><br></p>
+</div><p>
+  Creates a gen_fsm process which calls Module:init/1 to
+  initialize. To ensure a synchronized start-up procedure, this
+  function does not return until Module:init/1 has returned.
+ </p>
+
+<h3 class="function"><a name="terminate-3">terminate/3</a></h3>
+<div class="spec">
+<p><tt>terminate(Reason, StateName, State) -&gt; <a href="#type-void">void()</a></tt><br></p>
+</div><p>
+  This function is called by a gen_fsm when it is about to
+  terminate. It should be the opposite of Module:init/1 and do any
+  necessary cleaning up. When it returns, the gen_fsm terminates with
+  Reason. The return value is ignored.
+ </p>
+
+<h3 class="function"><a name="update_finished-0">update_finished/0</a></h3>
+<div class="spec">
+<p><tt>update_finished() -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="wait_20ms-0">wait_20ms/0 *</a></h3>
+<div class="spec">
+<p><tt>wait_20ms() -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="wait_born_finished-2">wait_born_finished/2</a></h3>
+<div class="spec">
+<p><tt>wait_born_finished(X1, State) -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="wait_info_finished-2">wait_info_finished/2</a></h3>
+<div class="spec">
+<p><tt>wait_info_finished(X1, State) -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="wait_update_finished-2">wait_update_finished/2</a></h3>
+<div class="spec">
+<p><tt>wait_update_finished(X1, State) -&gt; any()</tt></p>
+</div>
+<hr>
+
+<div class="navbar"><a name="#navbar_bottom"></a><table width="100%" border="0" cellspacing="0" cellpadding="2" summary="navigation bar"><tr><td><a href="overview-summary.html" target="overviewFrame">Overview</a></td><td><a href="http://www.erlang.org/"><img src="erlang.png" align="right" border="0" alt="erlang logo"></a></td></tr></table></div>
+<p><i>Generated by EDoc, Aug 31 2013, 07:44:43.</i></p>
+</body>
+</html>

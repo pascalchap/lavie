@@ -1,0 +1,291 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<title>Module lavie_server</title>
+<link rel="stylesheet" type="text/css" href="stylesheet.css" title="EDoc">
+</head>
+<body bgcolor="white">
+<div class="navbar"><a name="#navbar_top"></a><table width="100%" border="0" cellspacing="0" cellpadding="2" summary="navigation bar"><tr><td><a href="overview-summary.html" target="overviewFrame">Overview</a></td><td><a href="http://www.erlang.org/"><img src="erlang.png" align="right" border="0" alt="erlang logo"></a></td></tr></table></div>
+<hr>
+
+<h1>Module lavie_server</h1>
+<ul class="index"><li><a href="#index">Function Index</a></li><li><a href="#functions">Function Details</a></li></ul>
+
+<p><b>Behaviours:</b> <a href="gen_server.html"><tt>gen_server</tt></a>.</p>
+
+<h2><a name="index">Function Index</a></h2>
+<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#birdth-0">birdth/0</a></td><td></td></tr>
+<tr><td valign="top"><a href="#born-0">born/0</a></td><td></td></tr>
+<tr><td valign="top"><a href="#born_finished-0">born_finished/0</a></td><td></td></tr>
+<tr><td valign="top"><a href="#click-2">click/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#code_change-3">code_change/3</a></td><td>
+  Convert process state when code is changed.</td></tr>
+<tr><td valign="top"><a href="#config-0">config/0</a></td><td></td></tr>
+<tr><td valign="top"><a href="#create_world-0">create_world/0</a></td><td></td></tr>
+<tr><td valign="top"><a href="#die-2">die/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#do_birdth-2">do_birdth/2*</a></td><td></td></tr>
+<tr><td valign="top"><a href="#do_create_world-2">do_create_world/2*</a></td><td></td></tr>
+<tr><td valign="top"><a href="#do_init_world-1">do_init_world/1*</a></td><td></td></tr>
+<tr><td valign="top"><a href="#do_multicast-2">do_multicast/2*</a></td><td></td></tr>
+<tr><td valign="top"><a href="#do_new_world-0">do_new_world/0*</a></td><td></td></tr>
+<tr><td valign="top"><a href="#do_toggle-2">do_toggle/2*</a></td><td></td></tr>
+<tr><td valign="top"><a href="#done_info-0">done_info/0</a></td><td></td></tr>
+<tr><td valign="top"><a href="#done_update-0">done_update/0</a></td><td></td></tr>
+<tr><td valign="top"><a href="#get_neighbor-2">get_neighbor/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#handle_call-3">handle_call/3</a></td><td>
+  Handling call messages.</td></tr>
+<tr><td valign="top"><a href="#handle_cast-2">handle_cast/2</a></td><td>
+  Handling cast messages.</td></tr>
+<tr><td valign="top"><a href="#handle_info-2">handle_info/2</a></td><td>
+  Handling all non call/cast messages.</td></tr>
+<tr><td valign="top"><a href="#info-0">info/0</a></td><td></td></tr>
+<tr><td valign="top"><a href="#info_finished-0">info_finished/0*</a></td><td></td></tr>
+<tr><td valign="top"><a href="#init-1">init/1</a></td><td>
+  Initializes the server.</td></tr>
+<tr><td valign="top"><a href="#init_world-1">init_world/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#killcell-1">killcell/1*</a></td><td></td></tr>
+<tr><td valign="top"><a href="#multicast-1">multicast/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#neighbors-4">neighbors/4*</a></td><td></td></tr>
+<tr><td valign="top"><a href="#newCell-3">newCell/3*</a></td><td></td></tr>
+<tr><td valign="top"><a href="#new_world-0">new_world/0</a></td><td></td></tr>
+<tr><td valign="top"><a href="#reset-0">reset/0</a></td><td></td></tr>
+<tr><td valign="top"><a href="#setBr-1">setBr/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#setSr-1">setSr/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#start_link-0">start_link/0</a></td><td>
+  Starts the server.</td></tr>
+<tr><td valign="top"><a href="#start_link-2">start_link/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#state-2">state/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#survive-2">survive/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#terminate-2">terminate/2</a></td><td>
+  This function is called by a gen_server when it is about to
+  terminate.</td></tr>
+<tr><td valign="top"><a href="#update-0">update/0</a></td><td></td></tr>
+<tr><td valign="top"><a href="#update_finished-0">update_finished/0*</a></td><td></td></tr>
+<tr><td valign="top"><a href="#wrap-2">wrap/2*</a></td><td></td></tr>
+</table>
+
+<h2><a name="functions">Function Details</a></h2>
+
+<h3 class="function"><a name="birdth-0">birdth/0</a></h3>
+<div class="spec">
+<p><tt>birdth() -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="born-0">born/0</a></h3>
+<div class="spec">
+<p><tt>born() -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="born_finished-0">born_finished/0</a></h3>
+<div class="spec">
+<p><tt>born_finished() -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="click-2">click/2</a></h3>
+<div class="spec">
+<p><tt>click(X, Y) -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="code_change-3">code_change/3</a></h3>
+<div class="spec">
+<p><tt>code_change(OldVsn, State, Extra) -&gt; {ok, NewState}</tt><br></p>
+</div><p>
+  Convert process state when code is changed
+ </p>
+
+<h3 class="function"><a name="config-0">config/0</a></h3>
+<div class="spec">
+<p><tt>config() -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="create_world-0">create_world/0</a></h3>
+<div class="spec">
+<p><tt>create_world() -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="die-2">die/2</a></h3>
+<div class="spec">
+<p><tt>die(X, Y) -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="do_birdth-2">do_birdth/2 *</a></h3>
+<div class="spec">
+<p><tt>do_birdth(MSB, MSC) -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="do_create_world-2">do_create_world/2 *</a></h3>
+<div class="spec">
+<p><tt>do_create_world(Br, Sr) -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="do_init_world-1">do_init_world/1 *</a></h3>
+<div class="spec">
+<p><tt>do_init_world(T) -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="do_multicast-2">do_multicast/2 *</a></h3>
+<div class="spec">
+<p><tt>do_multicast(Msg, MSA) -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="do_new_world-0">do_new_world/0 *</a></h3>
+<div class="spec">
+<p><tt>do_new_world() -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="do_toggle-2">do_toggle/2 *</a></h3>
+<div class="spec">
+<p><tt>do_toggle(X, Y) -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="done_info-0">done_info/0</a></h3>
+<div class="spec">
+<p><tt>done_info() -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="done_update-0">done_update/0</a></h3>
+<div class="spec">
+<p><tt>done_update() -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="get_neighbor-2">get_neighbor/2</a></h3>
+<div class="spec">
+<p><tt>get_neighbor(X, Y) -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="handle_call-3">handle_call/3</a></h3>
+<div class="spec">
+<p><tt>handle_call(Request, From, State) -&gt; {reply, Reply, State} | {reply, Reply, State, Timeout} | {noreply, State} | {noreply, State, Timeout} | {stop, Reason, Reply, State} | {stop, Reason, State}</tt><br></p>
+</div><p>
+  Handling call messages
+ </p>
+
+<h3 class="function"><a name="handle_cast-2">handle_cast/2</a></h3>
+<div class="spec">
+<p><tt>handle_cast(Msg, State) -&gt; {noreply, State} | {noreply, State, Timeout} | {stop, Reason, State}</tt><br></p>
+</div><p>
+  Handling cast messages
+ </p>
+
+<h3 class="function"><a name="handle_info-2">handle_info/2</a></h3>
+<div class="spec">
+<p><tt>handle_info(Info, State) -&gt; {noreply, State} | {noreply, State, Timeout} | {stop, Reason, State}</tt><br></p>
+</div><p>
+  Handling all non call/cast messages
+ </p>
+
+<h3 class="function"><a name="info-0">info/0</a></h3>
+<div class="spec">
+<p><tt>info() -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="info_finished-0">info_finished/0 *</a></h3>
+<div class="spec">
+<p><tt>info_finished() -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="init-1">init/1</a></h3>
+<div class="spec">
+<p><tt>init(X1::Args) -&gt; {ok, State} | {ok, State, Timeout} | ignore | {stop, Reason}</tt><br></p>
+</div><p>
+  Initializes the server
+ </p>
+
+<h3 class="function"><a name="init_world-1">init_world/1</a></h3>
+<div class="spec">
+<p><tt>init_world(L) -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="killcell-1">killcell/1 *</a></h3>
+<div class="spec">
+<p><tt>killcell(K) -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="multicast-1">multicast/1</a></h3>
+<div class="spec">
+<p><tt>multicast(Msg) -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="neighbors-4">neighbors/4 *</a></h3>
+<div class="spec">
+<p><tt>neighbors(X, Y, Br, Sr) -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="newCell-3">newCell/3 *</a></h3>
+<div class="spec">
+<p><tt>newCell(X, Y, Neighbors) -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="new_world-0">new_world/0</a></h3>
+<div class="spec">
+<p><tt>new_world() -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="reset-0">reset/0</a></h3>
+<div class="spec">
+<p><tt>reset() -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="setBr-1">setBr/1</a></h3>
+<div class="spec">
+<p><tt>setBr(N) -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="setSr-1">setSr/1</a></h3>
+<div class="spec">
+<p><tt>setSr(N) -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="start_link-0">start_link/0</a></h3>
+<div class="spec">
+<p><tt>start_link() -&gt; {ok, Pid} | ignore | {error, Error}</tt><br></p>
+</div><p>
+  Starts the server
+ </p>
+
+<h3 class="function"><a name="start_link-2">start_link/2</a></h3>
+<div class="spec">
+<p><tt>start_link(W, H) -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="state-2">state/2</a></h3>
+<div class="spec">
+<p><tt>state(X, Y) -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="survive-2">survive/2</a></h3>
+<div class="spec">
+<p><tt>survive(X, Y) -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="terminate-2">terminate/2</a></h3>
+<div class="spec">
+<p><tt>terminate(Reason, State) -&gt; <a href="#type-void">void()</a></tt><br></p>
+</div><p>
+  This function is called by a gen_server when it is about to
+  terminate. It should be the opposite of Module:init/1 and do any
+  necessary cleaning up. When it returns, the gen_server terminates
+  with Reason. The return value is ignored.
+ </p>
+
+<h3 class="function"><a name="update-0">update/0</a></h3>
+<div class="spec">
+<p><tt>update() -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="update_finished-0">update_finished/0 *</a></h3>
+<div class="spec">
+<p><tt>update_finished() -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="wrap-2">wrap/2 *</a></h3>
+<div class="spec">
+<p><tt>wrap(Base, V) -&gt; any()</tt></p>
+</div>
+<hr>
+
+<div class="navbar"><a name="#navbar_bottom"></a><table width="100%" border="0" cellspacing="0" cellpadding="2" summary="navigation bar"><tr><td><a href="overview-summary.html" target="overviewFrame">Overview</a></td><td><a href="http://www.erlang.org/"><img src="erlang.png" align="right" border="0" alt="erlang logo"></a></td></tr></table></div>
+<p><i>Generated by EDoc, Aug 31 2013, 07:44:43.</i></p>
+</body>
+</html>

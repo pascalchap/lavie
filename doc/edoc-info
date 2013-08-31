@@ -1,0 +1,3 @@
+{application,lavie}.
+{packages,[]}.
+{modules,[cell,lavie,lavie_app,lavie_fsm,lavie_server,lavie_sup,lavie_wx]}.

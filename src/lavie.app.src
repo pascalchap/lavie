@@ -1,0 +1,12 @@
+{application, lavie,
+ [
+  {description, "Le jeu de la vie selon Conway"},
+  {vsn, "1.0.0"},
+  {registered, [lavie_sup,lavie_wx,lavie_fsm,lavie_server]},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {mod, { lavie_app, [200,50]}},
+  {env, []}
+ ]}.
