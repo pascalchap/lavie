@@ -16,7 +16,7 @@ start(_StartType, [W1,H1]) ->
 
 stop(_State) ->
 	init:stop().
-
+	
 get(Name,Def) ->
 	case init:get_argument(Name) of
 		{ok,[[L]]} -> list_to_integer(L);

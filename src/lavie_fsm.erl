@@ -20,7 +20,9 @@
          period/1,
          dclick/0,
          right_down/0,
-         middle_down/0
+         middle_down/0,
+         faster/0,
+         slower/0
          ]).
 
 %% gen_fsm callbacks
@@ -78,6 +80,12 @@ right_down() ->
 
 middle_down() ->
         gen_fsm:send_all_state_event(?SERVER,middle_down).  
+
+faster() ->
+        gen_fsm:send_all_state_event(?SERVER,faster).  
+
+slower() ->
+        gen_fsm:send_all_state_event(?SERVER,slower).  
 
 %%%===================================================================
 %%% gen_fsm callbacks
@@ -186,6 +194,14 @@ handle_event(right_down, standby, State) ->
 
 handle_event({newPeriod,P}, StateName, State) ->
         {next_state, StateName, State#state{cycle=P}};
+
+handle_event(faster, StateName, #state{cycle = P} = State) ->
+        NewP = max(round(P/1.2),20),
+        {next_state, StateName, State#state{cycle=NewP}};
+
+handle_event(slower, StateName, #state{cycle = P} = State) ->
+        NewP = round(P*1.2),
+        {next_state, StateName, State#state{cycle=NewP}};
 
 handle_event(cycle, wait_cycle, State) ->
         idle(),

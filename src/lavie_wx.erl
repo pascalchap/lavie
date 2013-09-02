@@ -8,6 +8,12 @@
 -behaviour(wx_object).
 
 -define (SERVER , ?MODULE).
+-define(FAST,100).
+-define(SLOW,101).
+-define(B_FAST,{?FAST,"plus vite"}).
+-define(B_SPARE,{-1,""}).
+-define(B_SLOW,{?SLOW,"moins vite"}).
+-define(BLIST,[?B_FAST,?B_SPARE,?B_SLOW]).
 
 -record(state,{frame  %% la fentre principale
 			,panel    %% la zonne d'affichage des cellule
@@ -97,6 +103,10 @@ handle_event(#wx{event=#wxMouse{type=middle_down}},S) ->
 handle_event(#wx{event=#wxMouse{type=right_down}},S) ->
     lavie_fsm:right_down(),
     {noreply,S};
+handle_event(#wx{event=#wxCommand{type=command_button_clicked},id=Id},#state{frame=F} = S) ->
+    M = keypress(Id),
+	wxFrame:setStatusText(F,M,[]),
+    {noreply,S};
 handle_event(E, #state{frame=F}= S) ->
     M = io_lib:format("ignore event ~p ",[E#wx.event]),
     wxFrame:setStatusText(F,M,[]),
@@ -138,32 +148,51 @@ terminate(Reason, _State) ->
 create_window(W1,H1) ->
 	W = 3 * W1 + 1,
 	H = 3 * H1 + 1,
-    Frame = wxFrame:new(wx:null(), -1, "La Vie", [{size,{W + 8, H + 57}},
-                                 {style,	?wxMINIMIZE_BOX bor
-                                 			?wxSYSTEM_MENU bor
-                                 			?wxCAPTION  bor
-                                 			?wxCLOSE_BOX
-                                 			}]),
+    Frame = wxFrame:new(wx:null(), -1, "Le jeu de la vie (C) Pascal Chapier", 
+    							[{size,{max(W + 16,270), H + 145}},
+                                {style,	?wxMINIMIZE_BOX bor
+                                 	?wxSYSTEM_MENU bor
+                                 	?wxCAPTION  bor
+                                 	?wxCLOSE_BOX
+                                 }]),
+    wxFrame:setStatusBar(Frame,wxFrame:createStatusBar(Frame,[])),
+    wxFrame:connect(Frame, close_window), 
     fill_window(W,H,Frame).
 
 fill_window(W,H,Frame) ->
-    wxFrame:setStatusBar(Frame,wxFrame:createStatusBar(Frame,[])),
-    wxFrame:setTitle(Frame,"Le jeu de la vie (C) Pascal Chapier"),
-    wxFrame:connect(Frame, close_window), 
-    % Panel = wxPanel:new(Frame, [{style, ?wxFULL_REPAINT_ON_RESIZE}]),  
-    Panel = wxPanel:new(Frame, []),  
+   	MainSz = wxBoxSizer:new(?wxVERTICAL),
+    Board = wxPanel:new(Frame),
+    wxWindow:setSizer(Board,MainSz),
+
+   	PanSz = wxStaticBoxSizer:new(?wxVERTICAL, Board,[{label, "Le Monde"}]),
+    KeySz = wxStaticBoxSizer:new(?wxVERTICAL, Board,[{label, "Controle"}]),
+    KeyGrSz = wxGridSizer:new(1,3,2,2),
+
+	Panel = wxPanel:new(Board, [{size,{W,H}}]),  
+    % Panel = wxPanel:new(Frame, []),  
+
+    wxSizer:addSpacer(MainSz,2),
+    wxSizer:add(PanSz, Panel, [{flag, ?wxALL bor ?wxEXPAND}]), 
+    wxSizer:add(MainSz, PanSz, [{proportion, 0}, {border, 4}, {flag, ?wxALL bor ?wxEXPAND}]), 
+    wxSizer:addSpacer(MainSz,3),
     wxPanel:connect(Panel, paint, [callback]),
     wxPanel:connect(Panel, left_up, []),
 	wxPanel:connect(Panel, left_dclick, []),
 	wxPanel:connect(Panel, right_down, []),
 	wxPanel:connect(Panel, middle_down, []),
 
+    wxSizer:addSpacer(MainSz,3),
+	wxSizer:add(KeySz, KeyGrSz, [{flag, ?wxALL bor ?wxEXPAND}]), 
+	[wxSizer:add(KeyGrSz, wxButton:new(Board,Id,[{label,Txt},{size,{80,20}}]), [{flag, ?wxALL}]) || {Id,Txt} <- ?BLIST],
+    wxSizer:add(MainSz, KeySz, [{proportion, 0}, {border, 4}, {flag, ?wxALL}]), 
+    wxSizer:addSpacer(MainSz,2),
+    wxWindow:connect(Board, command_button_clicked),
+
 	ClientDC = wxClientDC:new(Panel),
 	Bitmap = wxBitmap:new(W,H),
 	PM = wxPen:new(color(dead), [{width, 1}]),
 	PV = wxPen:new(color(live), [{width, 1}]),
 	BG 	= wxBrush:new(color(background)),
-    wxWindow:show(Frame),
 
 %% initialisation de l'image de départ
 	MemoryDC = wxMemoryDC:new(Bitmap),
@@ -176,8 +205,10 @@ fill_window(W,H,Frame) ->
 	wxDC:setPen(MemoryDC,PM),
     [cell(MemoryDC, {X,Y}) || X <- lists:seq(0,W-1), Y <- lists:seq(0,H-1)],
     redraw(ClientDC,Bitmap,W,H),
-    wxWindow:refresh(Panel),    
 
+    wxSizer:layout(MainSz),
+    wxWindow:show(Frame),
+    wxWindow:refresh(Panel),    
     {Frame, Panel, Bitmap, ClientDC, PV, PM}.
 
 color(live) -> {255,255,255};
@@ -219,3 +250,9 @@ setcell(DC,Pen,Cell,Bitmap,W,H) ->
     wxDC:blit(DC, {0,0},{W,H},MemoryDC, {0,0}),
     wxMemoryDC:destroy(MemoryDC).
 
+keypress(?FAST) ->
+	lavie_fsm:faster(),
+	"accelère";
+keypress(?SLOW) ->
+	lavie_fsm:slower(),
+	"ralenti".
