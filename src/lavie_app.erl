@@ -11,7 +11,7 @@
 
 start(_StartType, [W1,H1]) ->
 	W = get(width,W1), 
-	H = get(heigth,H1),
+	H = get(height,H1),
     lavie_sup:start_link([W,H]).
 
 stop(_State) ->

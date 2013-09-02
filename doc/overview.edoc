@@ -10,3 +10,13 @@
 </li><li>
 <em><b>mort :</b></em> une cellule meurt si moins de 2 ou plus de 3 de ses 8 cases voisines sont occup&#233;es
 </li>
+
+
+<p>lancement de l'application avec une taille par d&#233;faut (200x50) ou param&#233;tr&#233;e par les flags -width nombre et -height nombre</p>
+<p>double click gauche pour d&#233;marrer/passer en standby</p>
+<p>click gauche pour cr&#233;er/tuer une cellule</p>
+<p>click droit (en mode standby) pour faire du pas a pas</p>
+<p>click milieu pour revenir en config puis tuer toutes les cellules</p>
+<p>Le bouton plus vite r&#233;duit la p&#233;riode de 20%,</p>
+<p>le bouton moins vite augmente la p&#233;riode de 20%.</p>
+
