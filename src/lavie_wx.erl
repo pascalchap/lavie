@@ -10,10 +10,12 @@
 -define (SERVER , ?MODULE).
 -define(FAST,100).
 -define(SLOW,101).
+-define(RUN,102).
 -define(B_FAST,{?FAST,"plus vite"}).
 -define(B_SPARE,{-1,""}).
 -define(B_SLOW,{?SLOW,"moins vite"}).
--define(BLIST,[?B_FAST,?B_SPARE,?B_SLOW]).
+-define(B_RUN,{?RUN,"marche/arret"}).
+-define(BLIST,[?B_FAST,?B_RUN,?B_SLOW,?B_SPARE,?B_SPARE,?B_SPARE]).
 
 -record(state,{frame  %% la fentre principale
 			,panel    %% la zonne d'affichage des cellule
@@ -91,9 +93,6 @@ handle_info(M,S = #state{frame=F}) ->
 
 handle_event(#wx{event=#wxClose{}},S) ->
     {stop, shutdown, S};
-handle_event(#wx{event=#wxMouse{type=left_dclick}},S) ->
-    lavie_fsm:dclick(),
-    {noreply,S};
 handle_event(#wx{event=#wxMouse{type=left_up,x=X,y=Y}},S) ->
     lavie_server:click(X div 3, Y div 3),
     {noreply,S};
@@ -149,7 +148,7 @@ create_window(W1,H1) ->
 	W = 3 * W1 + 1,
 	H = 3 * H1 + 1,
     Frame = wxFrame:new(wx:null(), -1, "Le jeu de la vie (C) Pascal Chapier", 
-    							[{size,{max(W + 16,270), H + 145}},
+    							[{size,{max(W + 16,270), H + 167}},
                                 {style,	?wxMINIMIZE_BOX bor
                                  	?wxSYSTEM_MENU bor
                                  	?wxCAPTION  bor
@@ -166,10 +165,9 @@ fill_window(W,H,Frame) ->
 
    	PanSz = wxStaticBoxSizer:new(?wxVERTICAL, Board,[{label, "Le Monde"}]),
     KeySz = wxStaticBoxSizer:new(?wxVERTICAL, Board,[{label, "Controle"}]),
-    KeyGrSz = wxGridSizer:new(1,3,2,2),
+    KeyGrSz = wxGridSizer:new(2,3,2,2),
 
 	Panel = wxPanel:new(Board, [{size,{W,H}}]),  
-    % Panel = wxPanel:new(Frame, []),  
 
     wxSizer:addSpacer(MainSz,2),
     wxSizer:add(PanSz, Panel, [{flag, ?wxALL bor ?wxEXPAND}]), 
@@ -177,7 +175,6 @@ fill_window(W,H,Frame) ->
     wxSizer:addSpacer(MainSz,3),
     wxPanel:connect(Panel, paint, [callback]),
     wxPanel:connect(Panel, left_up, []),
-	wxPanel:connect(Panel, left_dclick, []),
 	wxPanel:connect(Panel, right_down, []),
 	wxPanel:connect(Panel, middle_down, []),
 
@@ -255,4 +252,9 @@ keypress(?FAST) ->
 	"accelère";
 keypress(?SLOW) ->
 	lavie_fsm:slower(),
-	"ralenti".
+	"ralenti";
+keypress(?RUN) ->
+    lavie_fsm:dclick(),
+    "marche/arret";
+keypress(_) ->
+    "pas defini".
