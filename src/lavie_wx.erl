@@ -8,14 +8,22 @@
 -behaviour(wx_object).
 
 -define (SERVER , ?MODULE).
+-define(MAIN,200).
+-define(CHILD,201).
+-define(WSTORE,202).
+-define(WREAD,203).
 -define(FAST,100).
 -define(SLOW,101).
 -define(RUN,102).
+-define(STORE,103).
+-define(READ,104).
 -define(B_FAST,{?FAST,"plus vite"}).
 -define(B_SPARE,{-1,""}).
 -define(B_SLOW,{?SLOW,"moins vite"}).
 -define(B_RUN,{?RUN,"marche/arret"}).
--define(BLIST,[?B_FAST,?B_RUN,?B_SLOW,?B_SPARE,?B_SPARE,?B_SPARE]).
+-define(B_STORE,{?STORE,"enregistrer"}).
+-define(B_READ,{?READ,"lire"}).
+-define(BLIST,[?B_FAST,?B_RUN,?B_SLOW,?B_STORE,?B_READ,?B_SPARE]).
 
 -record(state,{frame  %% la fentre principale
 			,panel    %% la zonne d'affichage des cellule
@@ -32,9 +40,7 @@
 %%
 -export([start_link/0
 		,start_link/2
-		,affiche/2
 		,setcell/2
-		,refresh/0
 		,info/1
 		]).
 
@@ -60,14 +66,8 @@ init([W,H]) ->
     {Frame, Panel, Bitmap, CDC, PV, PM} = wx:batch(fun() -> create_window(W,H) end),
     {Frame, #state{frame=Frame, panel=Panel, bitmap=Bitmap, clientDC=CDC, w=3*W+1, h=3*H+1, penlive=PV, pendead=PM}}.
 
-affiche(Live,Dead) ->
-	wx_object:call(?SERVER,{affiche,Live,Dead}).
-
 setcell(Etat,Cell) ->
 	wx_object:cast(?SERVER,{setcell,Etat,Cell}).
-
-refresh() ->
-	wx_object:call(?SERVER,refresh).
 
 info(M) when is_atom(M) ->
 	info(atom_to_list(M));
@@ -91,8 +91,19 @@ handle_info(M,S = #state{frame=F}) ->
     wxFrame:setStatusText(F,M1,[]),
     {noreply, S}.
 
-handle_event(#wx{event=#wxClose{}},S) ->
+handle_event(#wx{id=?MAIN,event=#wxClose{}}, S) ->
     {stop, shutdown, S};
+handle_event(#wx{id=?CHILD,obj=O,event=#wxClose{}}, S) ->
+	wxFrame:destroy(O),
+    {noreply, S};
+handle_event(#wx{id=?WSTORE,obj=O,event = #wxFileDirPicker{type = command_filepicker_changed, path = Path}}, State) ->
+	lavie_fsm:save(Path),
+	wxWindow:destroy(wxFilePickerCtrl:getParent(O)),
+    {noreply, State};
+handle_event(#wx{id=?WREAD,obj=O,event = #wxFileDirPicker{type = command_filepicker_changed, path = Path}}, State) ->
+	lavie_fsm:read(Path),
+	wxWindow:destroy(wxFilePickerCtrl:getParent(O)),
+    {noreply, State};
 handle_event(#wx{event=#wxMouse{type=left_up,x=X,y=Y}},S) ->
     lavie_server:click(X div 3, Y div 3),
     {noreply,S};
@@ -108,16 +119,11 @@ handle_event(#wx{event=#wxCommand{type=command_button_clicked},id=Id},#state{fra
     {noreply,S};
 handle_event(E, #state{frame=F}= S) ->
     M = io_lib:format("ignore event ~p ",[E#wx.event]),
+    io:format("ignore event ~p~n",[E]),
     wxFrame:setStatusText(F,M,[]),
     {noreply,S}.
 
 
-handle_call(refresh, _From, #state{panel=Panel} = State) ->
-    wxWindow:refresh(Panel),
-    {reply, ok, State};
-handle_call({affiche,Live,Dead}, _From, #state{panel=Panel, clientDC=ClientDC, bitmap=Bitmap, w=W, h=H, pendead=PM, penlive=PV} = State) ->
-    redraw(Panel,ClientDC, Bitmap, Live, Dead, W, H, PV, PM),
-    {reply, ok, State};
 handle_call(What, _From, State) ->
     {stop, {call, What}, State}.
 
@@ -147,7 +153,7 @@ terminate(Reason, _State) ->
 create_window(W1,H1) ->
 	W = 3 * W1 + 1,
 	H = 3 * H1 + 1,
-    Frame = wxFrame:new(wx:null(), -1, "Le jeu de la vie (C) Pascal Chapier", 
+    Frame = wxFrame:new(wx:null(), ?MAIN, "Le jeu de la vie (C) Pascal Chapier", 
     							[{size,{max(W + 16,270), H + 167}},
                                 {style,	?wxMINIMIZE_BOX bor
                                  	?wxSYSTEM_MENU bor
@@ -217,20 +223,6 @@ redraw(DC, Bitmap, W, H) ->
     wxDC:blit(DC, {0,0},{W,H},MemoryDC, {0,0}),
     wxMemoryDC:destroy(MemoryDC).
 
-redraw(Panel,DC, Bitmap, Live, Dead, W, H, PV, PM) ->
-    MemoryDC = wxMemoryDC:new(Bitmap),
-
-    wxDC:setPen(MemoryDC,PV),
-    [cell(MemoryDC,Pos) || Pos <- Live],
-    wxDC:setPen(MemoryDC,PM),
-    [cell(MemoryDC,Pos) || Pos <- Dead],
-    wxDC:blit(DC, {0,0},{W,H},MemoryDC, {0,0}),
-
-    wxMemoryDC:destroy(MemoryDC),
-    wxWindow:freeze(Panel),    
-    wxWindow:refresh(Panel),
-    wxWindow:thaw(Panel).
-
 cell(DC,{Orx,Ory}) ->
 	wxDC:drawRectangle(DC, {3*Orx+1,3*Ory+1}, {2,2}).
 
@@ -256,5 +248,27 @@ keypress(?SLOW) ->
 keypress(?RUN) ->
     lavie_fsm:dclick(),
     "marche/arret";
+keypress(?STORE) ->
+	accesfichier("enregistrer",?WSTORE, ?wxFLP_SAVE bor ?wxFLP_OVERWRITE_PROMPT),
+    "enregistrer";
+keypress(?READ) ->
+	accesfichier("lire",?WREAD, ?wxFLP_OPEN bor ?wxFLP_FILE_MUST_EXIST),
+    "lire";
 keypress(_) ->
     "pas defini".
+
+accesfichier(Titre,Id,Style) ->
+    T = wxFrame:new(wx:null(), ?CHILD, Titre, 
+    							[{size,{400,60}},
+                                {style,	
+                                 	?wxSYSTEM_MENU bor
+                                 	?wxCAPTION  bor
+                                 	?wxCLOSE_BOX
+                                 }]),
+    wxFrame:connect(T, close_window), 
+    FilePicker = wxFilePickerCtrl:new(T, Id, [{style , 
+    											?wxFLP_USE_TEXTCTRL bor Style
+    											}]),
+    wxFilePickerCtrl:connect(FilePicker, command_filepicker_changed, []),
+    wxWindow:show(T).
+

@@ -22,7 +22,9 @@
          right_down/0,
          middle_down/0,
          faster/0,
-         slower/0
+         slower/0,
+         save/1,
+         read/1
          ]).
 
 %% gen_fsm callbacks
@@ -85,7 +87,13 @@ faster() ->
         gen_fsm:send_all_state_event(?SERVER,faster).  
 
 slower() ->
-        gen_fsm:send_all_state_event(?SERVER,slower).  
+        gen_fsm:send_all_state_event(?SERVER,slower).
+
+save(N) ->
+        gen_fsm:send_all_state_event(?SERVER,{save,N}).
+
+read(N) ->
+        gen_fsm:send_all_state_event(?SERVER,{read,N}).
 
 %%%===================================================================
 %%% gen_fsm callbacks
