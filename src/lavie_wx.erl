@@ -67,7 +67,7 @@ init([W,H]) ->
     {Frame, #state{frame=Frame, panel=Panel, bitmap=Bitmap, clientDC=CDC, w=3*W+1, h=3*H+1, penlive=PV, pendead=PM}}.
 
 setcell(Etat,Cell) ->
-	wx_object:cast(?SERVER,{setcell,Etat,Cell}).
+	wx_object:call(?SERVER,{setcell,Etat,Cell}).
 
 info(M) when is_atom(M) ->
 	info(atom_to_list(M));
@@ -124,16 +124,16 @@ handle_event(E, #state{frame=F}= S) ->
     {noreply,S}.
 
 
-handle_call(What, _From, State) ->
-    {stop, {call, What}, State}.
-
-handle_cast({setcell,Etat,Cell}, #state{clientDC=ClientDC, bitmap=Bitmap, w=W, h=H, penlive=PV, pendead=PM} = State) ->
+handle_call({setcell,Etat,Cell},_From, #state{clientDC=ClientDC, bitmap=Bitmap, w=W, h=H, penlive=PV, pendead=PM} = State) ->
 	Pen = case Etat of
 		live -> PV;
 		dead -> PM
 	end,
 	setcell(ClientDC, Pen, Cell, Bitmap, W, H),
-    {noreply, State};
+    {reply, ok, State};
+handle_call(What, _From, State) ->
+    {stop, {call, What}, State}.
+
 handle_cast({info,M}, #state{frame=F} = State) ->
 	wxFrame:setStatusText(F,M,[]),
     {noreply, State};
@@ -224,7 +224,13 @@ redraw(DC, Bitmap, W, H) ->
     wxMemoryDC:destroy(MemoryDC).
 
 cell(DC,{Orx,Ory}) ->
-	wxDC:drawRectangle(DC, {3*Orx+1,3*Ory+1}, {2,2}).
+	% wxDC:drawRectangle(DC, {3*Orx+1,3*Ory+1}, {2,2}).
+	X = 3*Orx+1,
+	Y = 3*Ory+1,
+	wxDC:drawPoint(DC,{X,Y}),
+	wxDC:drawPoint(DC,{X,Y+1}),
+	wxDC:drawPoint(DC,{X+1,Y}),
+	wxDC:drawPoint(DC,{X+1,Y+1}).
 
 setcell(DC,Pen,Cell,Bitmap,W,H) when is_list(Cell) ->
     MemoryDC = wxMemoryDC:new(Bitmap),
@@ -233,11 +239,7 @@ setcell(DC,Pen,Cell,Bitmap,W,H) when is_list(Cell) ->
     wxDC:blit(DC, {0,0},{W,H},MemoryDC, {0,0}),
     wxMemoryDC:destroy(MemoryDC);	    
 setcell(DC,Pen,Cell,Bitmap,W,H) ->
-    MemoryDC = wxMemoryDC:new(Bitmap),
-	wxDC:setPen(MemoryDC,Pen),
-    cell(MemoryDC,Cell),
-    wxDC:blit(DC, {0,0},{W,H},MemoryDC, {0,0}),
-    wxMemoryDC:destroy(MemoryDC).
+    setcell(DC,Pen,[Cell],Bitmap,W,H).
 
 keypress(?FAST) ->
 	lavie_fsm:faster(),
