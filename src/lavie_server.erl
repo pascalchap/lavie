@@ -27,7 +27,9 @@
 		born_finished/0,
 		click/2,
 		reset/0,
-		config/0]).
+		config/0,
+		save/1,
+		read/1]).
 
 %% gen_server callbacks
 -export([init/1,
@@ -91,6 +93,10 @@ reset() ->
 	multicast(reset).
 config() ->
 	gen_server:cast(?SERVER,config).
+read(F) ->
+	gen_server:call(?SERVER,{read,F}).
+save(F) ->
+	gen_server:call(?SERVER,{save,F}).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -149,6 +155,17 @@ handle_call({get_neighbor,X,Y}, _From, State) ->
 handle_call({state,X,Y}, _From, State) ->
 		[Reply] = ets:lookup(cells,{X,Y}),
         {reply, {value,Reply}, State};
+handle_call({save,F}, _From, State) ->
+		MSS = ets:fun2ms(fun({X,P,_,A,_}) when is_pid(P) -> {X,A} end),
+		A = ets:select(cells,MSS),
+		Reply = file:write_file(F,io_lib:format("~p.",[A])),
+        {reply, {value,Reply}, State};
+handle_call({read,F}, _From, State) ->
+		{ok,B} = file:read_file(F),
+		{ok,Tokens,_} = erl_scan:string(binary_to_list(B)),
+		{ok,Term} = erl_parse:parse_term(Tokens),
+		Reply = load(Term,State#state.br,State#state.sr),
+        {reply, {value,Reply}, State};		
 handle_call(_Request, _From, State) ->
         Reply = ok,
         {reply, Reply, State}.
@@ -225,7 +242,6 @@ handle_cast({survive,X,Y}, State) ->
     {noreply, State};
 handle_cast({die,X,Y}, State) ->
 	lavie_wx:setcell(dead,{X,Y}),
-	ets:update_element(cells,{X,Y},[{2,empty},{4,0},{5,0}]),
     {noreply, State};
 handle_cast(info_finished, State) when State#state.init == true ->
 	lavie_fsm:info_finished(),
@@ -313,11 +329,9 @@ do_multicast(Msg,MSA) ->
 do_toggle(X,Y) ->
 	[{_,P,Neighbors,_,_}] = ets:lookup(cells,{X,Y}),
 	case P of
-		empty -> 	Pid = newCell(X,Y,Neighbors),
-					ets:update_element(cells,{X,Y},[{2,Pid},{4,0},{5,0}]),
+		empty -> 	newCell(X,Y,Neighbors),
 					lavie_wx:setcell(live,{X,Y});
 		_ -> 		cell:stop(P),
-					ets:update_element(cells,{X,Y},[{2,empty},{4,0},{5,0}]),
 					lavie_wx:setcell(dead,{X,Y})
 	end.
 
@@ -332,8 +346,25 @@ neighbors(X,Y,Br,Sr) ->
 
 do_birdth(MSB,MSC) ->
 	B = ets:select(cells,MSB),
-	lists:foreach(fun({{X,Y},N}) -> {ok,Pid} = cell:start(X,Y,N), ets:update_element(cells,{X,Y},[{2,Pid},{4,0},{5,0}]) end,B),
+	setlive(B),
 	C = ets:select(cells,MSC),
 	lists:foreach(fun({X,Y}) -> ets:update_element(cells,{X,Y},[{4,0},{5,0}]) end,C),
-	lavie_wx:setcell(live,[X || {X,_} <- B]),
 	length(B).
+
+load(Cells,B,S) ->
+	load(Cells,B,S,[]).
+
+load([],_,_,P) ->
+	setlive(P);
+load([{{X,Y},_}|Q],B,S,P) ->
+	X1 = X rem B,
+	Y1 = Y rem S,
+	P1 = case ets:lookup(cells,{X1,Y1}) of
+		[{_,empty,N,_,_}] -> [{{X1,Y1},N}|P];
+		_ -> P
+	end,
+	load(Q,B,S,P1).
+
+setlive(P) ->
+	lists:foreach(fun({{X,Y},N}) -> cell:start(X,Y,N) end,P),
+	lavie_wx:setcell(live,[X || {X,_} <- P]).

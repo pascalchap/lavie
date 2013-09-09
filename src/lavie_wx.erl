@@ -104,8 +104,8 @@ handle_event(#wx{id=?WREAD,obj=O,event = #wxFileDirPicker{type = command_filepic
 	lavie_fsm:read(Path),
 	wxWindow:destroy(wxFilePickerCtrl:getParent(O)),
     {noreply, State};
-handle_event(#wx{event=#wxMouse{type=left_up,x=X,y=Y}},S) ->
-    lavie_server:click(X div 3, Y div 3),
+handle_event(#wx{event=#wxMouse{type=left_up,x=X,y=Y}},#state{w=W,h=H}=S) ->
+    lavie_server:click(min(X,W-2) div 3, min(Y,H-2) div 3),
     {noreply,S};
 handle_event(#wx{event=#wxMouse{type=middle_down}},S) ->
     lavie_fsm:middle_down(),
@@ -154,7 +154,7 @@ create_window(W1,H1) ->
 	W = 3 * W1 + 1,
 	H = 3 * H1 + 1,
     Frame = wxFrame:new(wx:null(), ?MAIN, "Le jeu de la vie (C) Pascal Chapier", 
-    							[{size,{max(W + 16,270), H + 167}},
+    							[{size,{max(W + 24,270), H + 167}},
                                 {style,	?wxMINIMIZE_BOX bor
                                  	?wxSYSTEM_MENU bor
                                  	?wxCAPTION  bor
@@ -224,13 +224,13 @@ redraw(DC, Bitmap, W, H) ->
     wxMemoryDC:destroy(MemoryDC).
 
 cell(DC,{Orx,Ory}) ->
-	% wxDC:drawRectangle(DC, {3*Orx+1,3*Ory+1}, {2,2}).
-	X = 3*Orx+1,
-	Y = 3*Ory+1,
-	wxDC:drawPoint(DC,{X,Y}),
-	wxDC:drawPoint(DC,{X,Y+1}),
-	wxDC:drawPoint(DC,{X+1,Y}),
-	wxDC:drawPoint(DC,{X+1,Y+1}).
+	wxDC:drawRectangle(DC, {3*Orx+1,3*Ory+1}, {2,2}).
+	% X = 3*Orx+1,
+	% Y = 3*Ory+1,
+	% wxDC:drawPoint(DC,{X,Y}),
+	% wxDC:drawPoint(DC,{X,Y+1}),
+	% wxDC:drawPoint(DC,{X+1,Y}),
+	% wxDC:drawPoint(DC,{X+1,Y+1}).
 
 setcell(DC,Pen,Cell,Bitmap,W,H) when is_list(Cell) ->
     MemoryDC = wxMemoryDC:new(Bitmap),

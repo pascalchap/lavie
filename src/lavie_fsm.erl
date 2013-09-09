@@ -41,7 +41,7 @@
 
 -define(SERVER, ?MODULE).
 
--record(state, {endCycle=false,cycle=20,standby=false,pidcycle}).
+-record(state, {endCycle=false,cycle=20,standby=false,pidcycle,do_save=false,do_read=false}).
 
 %%%===================================================================
 %%% API
@@ -219,6 +219,18 @@ handle_event(cycle, standby, State) ->
         {next_state, standby, State#state{endCycle=false}};
 handle_event(cycle, StateName, State) ->
         {next_state, StateName, State#state{endCycle=true}};
+
+handle_event({save,F}, StateName, State) when StateName == config; StateName == standby ->
+        lavie_server:save(F),
+        {next_state, StateName, State};
+handle_event({save,F}, StateName, State) ->
+        {next_state, StateName, State#state{do_save=true}};
+
+handle_event({read,F}, StateName, State) when StateName == config; StateName == standby ->
+        lavie_server:read(F),
+        {next_state, StateName, State};
+handle_event({read,F}, StateName, State) ->
+        {next_state, StateName, State#state{do_read=true}};
 
 handle_event(Event, StateName, #state{cycle=C}) ->
         M = io_lib:format("Ignore Event ~p during state ~p",[Event,StateName]),

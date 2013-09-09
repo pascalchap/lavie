@@ -60,6 +60,7 @@ start(X,Y,Neighbors) ->
 %% @end
 %%--------------------------------------------------------------------
 init([X,Y,Neighbors]) ->
+		ets:update_element(cells,{X,Y},[{2,self()},{4,0},{5,0}]),
 		lavie_server:born(),
         {ok, #state{x=X,y=Y,neighbors=Neighbors}}.
 
@@ -94,9 +95,11 @@ handle_call(_Request, _From, State) ->
 handle_cast(get_neighbor, #state{x=X,y=Y} = State) ->
 		{value,Neighbors} = lavie_server:get_neighbor(X,Y),
         {noreply, State#state{neighbors=Neighbors}};
-handle_cast(stop,State) ->
+handle_cast(stop,#state{x=X,y=Y} = State) ->
+		ets:update_element(cells,{X,Y},[{2,empty},{4,0},{5,0}]),
 		{stop, normal, State};
 handle_cast({cast,reset}, #state{x=X,y=Y} = State) ->
+		ets:update_element(cells,{X,Y},[{2,empty},{4,0},{5,0}]),
 		lavie_server:die(X,Y),
 		{stop, normal, State};
 handle_cast({cast,info_neighbors},#state{neighbors = Neighbors} = State) ->
@@ -159,6 +162,7 @@ do_update(X,Y,State) ->
 		true -> lavie_server:survive(X,Y),
 				{noreply, State};
 		false -> lavie_server:die(X,Y),
+				ets:update_element(cells,{X,Y},[{2,empty},{4,0},{5,0}]),
 				{stop, normal, State}
 	end.
 
