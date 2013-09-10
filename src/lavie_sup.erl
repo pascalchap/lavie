@@ -23,10 +23,10 @@ start_link(Args) ->
 %% Supervisor callbacks
 %% ===================================================================
 
-init([W,H]) ->
+init([W,H,Z]) ->
 	Lavie = {lavie,{lavie_server,start_link, [W,H]}, 
 	    transient,1000,worker,[lavie_server]}, 
-	Gui = {gui,{lavie_wx,start_link, [W,H]}, 
+	Gui = {gui,{lavie_wx,start_link, [W,H,Z]}, 
 	    transient,1000,worker,[lavie_wx]}, 
 	Fsm = {fsm,{lavie_fsm,start_link, []}, 
 	    transient,1000,worker,[lavie_fsm]}, 

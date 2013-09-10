@@ -25,21 +25,24 @@
 -define(B_READ,{?READ,"lire"}).
 -define(BLIST,[?B_FAST,?B_RUN,?B_SLOW,?B_STORE,?B_READ,?B_SPARE]).
 
--record(state,{frame  %% la fentre principale
-			,panel    %% la zonne d'affichage des cellule
-			,clientDC %% device contexte de panel
-			,bitmap   %% le contenu a afficher
-			,w        %% largeur
-			,h        %% hauteur
-			,penlive  %% crayon pour dessiner les cellules vivantes
-			,pendead  %% crayon pour dessiner les cellules mortes
+-record(state,{frame   %% la fentre principale
+			,panel     %% la zonne d'affichage des cellule
+			,clientDC  %% device contexte de panel
+			,bitmap    %% le contenu a afficher
+			,w         %% largeur
+			,h         %% hauteur
+			,penlive   %% crayon pour dessiner les cellules vivantes
+			,pendead   %% crayon pour dessiner les cellules mortes
+			,brushlive %% crayon pour dessiner les cellules vivantes
+			,brushdead %% crayon pour dessiner les cellules mortes
+			,zoom	   %% taille des cellules
 			}).
 
 %%
 %% Exported Functions
 %%
 -export([start_link/0
-		,start_link/2
+		,start_link/3
 		,setcell/2
 		,info/1
 		]).
@@ -54,17 +57,18 @@
 %% API Functions
 %%
 start_link() ->
-	start_link(200,50).
-start_link(W,H) ->
+	start_link(200,50,2).
+start_link(W,H,Z) ->
     wx:new(),
 %%    wx:debug(driver),
-    {wx_ref,_Id,_WxType,Pid} = wx_object:start_link(?MODULE, [W,H], []),
+    {wx_ref,_Id,_WxType,Pid} = wx_object:start_link(?MODULE, [W,H,Z], []),
     register(?SERVER,Pid),
     {ok,Pid}.
 
-init([W,H]) ->
-    {Frame, Panel, Bitmap, CDC, PV, PM} = wx:batch(fun() -> create_window(W,H) end),
-    {Frame, #state{frame=Frame, panel=Panel, bitmap=Bitmap, clientDC=CDC, w=3*W+1, h=3*H+1, penlive=PV, pendead=PM}}.
+init([W,H,Z]) ->
+    {Frame, Panel, Bitmap, CDC, PV, PM, BV, BM} = wx:batch(fun() -> create_window(W,H,Z) end),
+    {Frame, #state{frame=Frame, panel=Panel, bitmap=Bitmap, clientDC=CDC, w=(Z+1)*W+1, h=(Z+1)*H+1, zoom = Z, 
+    penlive=PV, pendead=PM, brushlive=BV, brushdead=BM}}.
 
 setcell(Etat,Cell) ->
 	wx_object:call(?SERVER,{setcell,Etat,Cell}).
@@ -104,8 +108,8 @@ handle_event(#wx{id=?WREAD,obj=O,event = #wxFileDirPicker{type = command_filepic
 	lavie_fsm:read(Path),
 	wxWindow:destroy(wxFilePickerCtrl:getParent(O)),
     {noreply, State};
-handle_event(#wx{event=#wxMouse{type=left_up,x=X,y=Y}},#state{w=W,h=H}=S) ->
-    lavie_server:click(min(X,W-2) div 3, min(Y,H-2) div 3),
+handle_event(#wx{event=#wxMouse{type=left_up,x=X,y=Y}},#state{w=W,h=H,zoom=Z}=S) ->
+    lavie_server:click(min(X,W-2) div (Z+1), min(Y,H-2) div (Z+1)),
     {noreply,S};
 handle_event(#wx{event=#wxMouse{type=middle_down}},S) ->
     lavie_fsm:middle_down(),
@@ -124,12 +128,12 @@ handle_event(E, #state{frame=F}= S) ->
     {noreply,S}.
 
 
-handle_call({setcell,Etat,Cell},_From, #state{clientDC=ClientDC, bitmap=Bitmap, w=W, h=H, penlive=PV, pendead=PM} = State) ->
-	Pen = case Etat of
-		live -> PV;
-		dead -> PM
+handle_call({setcell,Etat,Cell},_From, #state{clientDC=ClientDC, bitmap=Bitmap, w=W, h=H,zoom=Z, penlive=PV, pendead=PM, brushlive=BV, brushdead=BM} = State) ->
+	{Pen,Brush} = case Etat of
+		live -> {PV,BV};
+		dead -> {PM,BM}
 	end,
-	setcell(ClientDC, Pen, Cell, Bitmap, W, H),
+	setcell(ClientDC, Pen, Brush, Cell, Bitmap, W, H, Z),
     {reply, ok, State};
 handle_call(What, _From, State) ->
     {stop, {call, What}, State}.
@@ -150,9 +154,10 @@ terminate(Reason, _State) ->
 
 %%%%%%%%%%%%%%%%%%%%% local functions %%%%%%%%%%%%%
 
-create_window(W1,H1) ->
-	W = 3 * W1 + 1,
-	H = 3 * H1 + 1,
+create_window(W1,H1,Z) ->
+	Zt = Z + 1,
+	W = Zt * W1 + 1,
+	H = Zt * H1 + 1,
     Frame = wxFrame:new(wx:null(), ?MAIN, "Le jeu de la vie (C) Pascal Chapier", 
     							[{size,{max(W + 24,270), H + 167}},
                                 {style,	?wxMINIMIZE_BOX bor
@@ -162,9 +167,9 @@ create_window(W1,H1) ->
                                  }]),
     wxFrame:setStatusBar(Frame,wxFrame:createStatusBar(Frame,[])),
     wxFrame:connect(Frame, close_window), 
-    fill_window(W,H,Frame).
+    fill_window(W,H,Frame,Z).
 
-fill_window(W,H,Frame) ->
+fill_window(W,H,Frame,Z) ->
    	MainSz = wxBoxSizer:new(?wxVERTICAL),
     Board = wxPanel:new(Frame),
     wxWindow:setSizer(Board,MainSz),
@@ -196,6 +201,8 @@ fill_window(W,H,Frame) ->
 	PM = wxPen:new(color(dead), [{width, 1}]),
 	PV = wxPen:new(color(live), [{width, 1}]),
 	BG 	= wxBrush:new(color(background)),
+	BM 	= wxBrush:new(color(dead)),
+	BV 	= wxBrush:new(color(live)),
 
 %% initialisation de l'image de départ
 	MemoryDC = wxMemoryDC:new(Bitmap),
@@ -206,13 +213,14 @@ fill_window(W,H,Frame) ->
 	wxDC:drawRectangle(MemoryDC, {0,0}, {W,H}),
 	wxPen:destroy(PenTemp),
 	wxDC:setPen(MemoryDC,PM),
-    [cell(MemoryDC, {X,Y}) || X <- lists:seq(0,W-1), Y <- lists:seq(0,H-1)],
+	wxDC:setBrush(MemoryDC,BM),
+    [cell(MemoryDC, {X,Y},Z) || X <- lists:seq(0,W-1), Y <- lists:seq(0,H-1)],
     redraw(ClientDC,Bitmap,W,H),
 
     wxSizer:layout(MainSz),
     wxWindow:show(Frame),
     wxWindow:refresh(Panel),    
-    {Frame, Panel, Bitmap, ClientDC, PV, PM}.
+    {Frame, Panel, Bitmap, ClientDC, PV, PM, BV, BM}.
 
 color(live) -> {255,255,255};
 color(dead) -> {80,80,80};
@@ -223,23 +231,18 @@ redraw(DC, Bitmap, W, H) ->
     wxDC:blit(DC, {0,0},{W,H},MemoryDC, {0,0}),
     wxMemoryDC:destroy(MemoryDC).
 
-cell(DC,{Orx,Ory}) ->
-	wxDC:drawRectangle(DC, {3*Orx+1,3*Ory+1}, {2,2}).
-	% X = 3*Orx+1,
-	% Y = 3*Ory+1,
-	% wxDC:drawPoint(DC,{X,Y}),
-	% wxDC:drawPoint(DC,{X,Y+1}),
-	% wxDC:drawPoint(DC,{X+1,Y}),
-	% wxDC:drawPoint(DC,{X+1,Y+1}).
+cell(DC,{Orx,Ory},Z) ->
+	wxDC:drawRectangle(DC, {(Z+1)*Orx+1,(Z+1)*Ory+1}, {Z,Z}).
 
-setcell(DC,Pen,Cell,Bitmap,W,H) when is_list(Cell) ->
+setcell(DC,Pen,Brush,Cell,Bitmap,W,H,Z) when is_list(Cell) ->
     MemoryDC = wxMemoryDC:new(Bitmap),
 	wxDC:setPen(MemoryDC,Pen),
-    [cell(MemoryDC,Pos) || Pos <- Cell],
+	wxDC:setBrush(MemoryDC,Brush),
+    [cell(MemoryDC,Pos,Z) || Pos <- Cell],
     wxDC:blit(DC, {0,0},{W,H},MemoryDC, {0,0}),
     wxMemoryDC:destroy(MemoryDC);	    
-setcell(DC,Pen,Cell,Bitmap,W,H) ->
-    setcell(DC,Pen,[Cell],Bitmap,W,H).
+setcell(DC,Pen,Brush,Cell,Bitmap,W,H,Z) ->
+    setcell(DC,Pen,Brush,[Cell],Bitmap,W,H,Z).
 
 keypress(?FAST) ->
 	lavie_fsm:faster(),

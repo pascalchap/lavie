@@ -12,11 +12,31 @@
 </li>
 
 
-<p>lancement de l'application avec une taille par d&#233;faut (200x50) ou param&#233;tr&#233;e par les flags -width nombre et -height nombre</p>
-<p>double click gauche pour d&#233;marrer/passer en standby</p>
-<p>click gauche pour cr&#233;er/tuer une cellule</p>
-<p>click droit (en mode standby) pour faire du pas a pas</p>
-<p>click milieu pour revenir en config puis tuer toutes les cellules</p>
-<p>Le bouton plus vite r&#233;duit la p&#233;riode de 20%,</p>
-<p>le bouton moins vite augmente la p&#233;riode de 20%.</p>
+<p>lancement de l'application avec une taille par d&#233;faut (200x50 zoom 2) ou param&#233;tr&#233;e par les flags -width nombre, -height nombre -zoom nombre</p>
+<p>le bouton <b>marche/arret</b> permet de d&#233;marrer/passer en standby</p>
+<p><b>click gauche</b> pour cr&#233;er/tuer une cellule</p>
+<p><b>click droit</b> (en mode standby) pour faire du pas a pas</p>
+<p><b>click milieu</b> pour revenir en config puis tuer toutes les cellules</p>
+<p>Le bouton <b>plus vite</b> r&#233;duit la p&#233;riode de 20%,</p>
+<p>le bouton <b>moins vite</b> augmente la p&#233;riode de 20%.</p>
+<p>le bouton <b>ecrire</b> permet de sauvegarder le monde courrant dans un fichier (en standby uniquement, choix du fichier dans une popup)</p>
+<p>le bouton <b>lire</b> permet de charger un fichier dans le monde courant (en standby uniquement, choix du fichier dans une popup)</p>
+<p><b>syntaxe</b> du fichier de sauvegarde</p>
+```
+[
+	{{X1,Y1},0},
+	{{X2,Y2},0},
+	...,
+	{{Xn,Yn},0}
+].'''
+<p>Xi et Yi sont les coordon&#233;es des cellules vivantes qui seront ajout&#233;es. Si il y a d&#233;ja une cellule, pas d'effet; si Xi (ou Yi) est sup&#233;rieur a la dimension du monde D  (d), la valeur est ramen&#233;e a Xi modulo D (Yi modulo d): ca fait autant de tours que n&#233;cessaire.</p>
 
+
+<img src="default.png" alt="Config" title="la fenetre de jeu au demarrage avec les parametres par defaut" height="318" width="625"></img>
+<p></p>
+<img src="start_80x55x4.png" alt="Config" title="la fenetre de jeu au demarrage avec -width 80 - heigth 55 -zoom 4" height="418" width="425"></img>
+<p></p>
+<img src="running.png" alt="Config" title="la fenetre de jeu pendant la simulation" height="418" width="425"></img>
+<p></p>
+<img src="read.png" alt="Config" title="lancement du programme et lecture d'un fichier d'init" height="621" width="1143"></img>
+<p></p>

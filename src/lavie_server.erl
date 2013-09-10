@@ -132,7 +132,7 @@ init([W,H]) ->
 	Clean_MS = ets:fun2ms(fun({X,_,_,_,N}) when N =/= 0 -> X end),
 	Alive_MS = ets:fun2ms(fun({X,P,_,_,_}) when is_pid(P) -> P end),
 	do_create_world(W,H),
-    {ok, #state{clean=Clean_MS,birdth=Birdth_MS,alive=Alive_MS}}.
+    {ok, #state{clean=Clean_MS,birdth=Birdth_MS,alive=Alive_MS,br=W,sr=H}}.
 
 
 %%--------------------------------------------------------------------
