@@ -147,13 +147,16 @@ wait_update_finished(update_finished, State) ->
 
 wait_born_finished(born_finished, State) when   State#state.standby == true ->
         State#state.pidcycle ! stop,
+        lavie_wx:freeze(false),
         lavie_wx:info(standby),
         {next_state, standby, State};
 wait_born_finished(born_finished, State) when   State#state.endCycle == true ->
+        lavie_wx:freeze(false),
         lavie_wx:info(idle),
         wait_20ms(),
         {next_state, idle, State#state{endCycle=false}};
 wait_born_finished(born_finished, State) ->
+        lavie_wx:freeze(false),
         lavie_wx:info(wait_cycle),
         {next_state, wait_cycle, State}.
 
@@ -227,7 +230,9 @@ handle_event({save,F}, StateName, State) ->
         {next_state, StateName, State#state{do_save=true}};
 
 handle_event({read,F}, StateName, State) when StateName == config; StateName == standby ->
+        lavie_wx:freeze(true),
         lavie_server:read(F),
+        lavie_wx:freeze(false),
         {next_state, StateName, State};
 handle_event({read,F}, StateName, State) ->
         {next_state, StateName, State#state{do_read=true}};
@@ -313,5 +318,6 @@ newCycle(T) ->
                 end).
 
 idle() ->
+        lavie_wx:freeze(true),
         lavie_wx:info(idle),
         wait_20ms().

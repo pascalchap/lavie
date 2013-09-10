@@ -45,6 +45,7 @@
 		,start_link/3
 		,setcell/2
 		,info/1
+		,freeze/1
 		]).
 
 %%
@@ -77,6 +78,11 @@ info(M) when is_atom(M) ->
 	info(atom_to_list(M));
 info(M) ->
 	wx_object:cast(?SERVER,{info,M}).
+
+freeze(true) ->
+	wx_object:cast(?SERVER,freeze);
+freeze(false) ->
+	wx_object:cast(?SERVER,thaw).
 
 
 %%%%%%%%%%%%%%%%%%%%% Server callbacks %%%%%%%%%%%%%
@@ -128,18 +134,24 @@ handle_event(E, #state{frame=F}= S) ->
     {noreply,S}.
 
 
-handle_call({setcell,Etat,Cell},_From, #state{clientDC=ClientDC, bitmap=Bitmap, w=W, h=H,zoom=Z, penlive=PV, pendead=PM, brushlive=BV, brushdead=BM} = State) ->
+handle_call({setcell,Etat,Cell},_From, #state{clientDC=ClientDC, panel=Panel, bitmap=Bitmap, w=W, h=H,zoom=Z, penlive=PV, pendead=PM, brushlive=BV, brushdead=BM} = State) ->
 	{Pen,Brush} = case Etat of
 		live -> {PV,BV};
 		dead -> {PM,BM}
 	end,
-	setcell(ClientDC, Pen, Brush, Cell, Bitmap, W, H, Z),
+	setcell(ClientDC, Panel, Pen, Brush, Cell, Bitmap, W, H, Z),
     {reply, ok, State};
 handle_call(What, _From, State) ->
     {stop, {call, What}, State}.
 
 handle_cast({info,M}, #state{frame=F} = State) ->
 	wxFrame:setStatusText(F,M,[]),
+    {noreply, State};
+handle_cast(freeze, #state{panel=P} = State) ->
+	wxWindow:freeze(P),
+    {noreply, State};
+handle_cast(thaw, #state{panel=P} = State) ->
+	wxWindow:thaw(P),
     {noreply, State};
 handle_cast(_What, State) ->
     {noreply, State}.
@@ -195,6 +207,9 @@ fill_window(W,H,Frame,Z) ->
     wxSizer:add(MainSz, KeySz, [{proportion, 0}, {border, 4}, {flag, ?wxALL}]), 
     wxSizer:addSpacer(MainSz,2),
     wxWindow:connect(Board, command_button_clicked),
+    wxSizer:layout(MainSz),
+
+	wxWindow:freeze(Panel),
 
 	ClientDC = wxClientDC:new(Panel),
 	Bitmap = wxBitmap:new(W,H),
@@ -217,9 +232,9 @@ fill_window(W,H,Frame,Z) ->
     [cell(MemoryDC, {X,Y},Z) || X <- lists:seq(0,W-1), Y <- lists:seq(0,H-1)],
     redraw(ClientDC,Bitmap,W,H),
 
-    wxSizer:layout(MainSz),
-    wxWindow:show(Frame),
     wxWindow:refresh(Panel),    
+    wxWindow:show(Frame),
+    wxWindow:thaw(Panel),
     {Frame, Panel, Bitmap, ClientDC, PV, PM, BV, BM}.
 
 color(live) -> {255,255,255};
@@ -234,15 +249,17 @@ redraw(DC, Bitmap, W, H) ->
 cell(DC,{Orx,Ory},Z) ->
 	wxDC:drawRectangle(DC, {(Z+1)*Orx+1,(Z+1)*Ory+1}, {Z,Z}).
 
-setcell(DC,Pen,Brush,Cell,Bitmap,W,H,Z) when is_list(Cell) ->
+setcell(DC,Panel,Pen,Brush,Cell,Bitmap,W,H,Z) when is_list(Cell) ->
+    % wxWindow:freeze(Panel),
     MemoryDC = wxMemoryDC:new(Bitmap),
 	wxDC:setPen(MemoryDC,Pen),
 	wxDC:setBrush(MemoryDC,Brush),
     [cell(MemoryDC,Pos,Z) || Pos <- Cell],
     wxDC:blit(DC, {0,0},{W,H},MemoryDC, {0,0}),
-    wxMemoryDC:destroy(MemoryDC);	    
-setcell(DC,Pen,Brush,Cell,Bitmap,W,H,Z) ->
-    setcell(DC,Pen,Brush,[Cell],Bitmap,W,H,Z).
+    wxMemoryDC:destroy(MemoryDC);
+    % wxWindow:thaw(Panel);	    
+setcell(DC,Panel,Pen,Brush,Cell,Bitmap,W,H,Z) ->
+    setcell(DC,Panel,Pen,Brush,[Cell],Bitmap,W,H,Z).
 
 keypress(?FAST) ->
 	lavie_fsm:faster(),
