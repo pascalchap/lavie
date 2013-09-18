@@ -4,26 +4,11 @@
 %%
 
 -include_lib("wx/include/wx.hrl").
+-include("../include/lavie.hrl").
 
 -behaviour(wx_object).
 
 -define (SERVER , ?MODULE).
--define(MAIN,200).
--define(CHILD,201).
--define(WSTORE,202).
--define(WREAD,203).
--define(FAST,100).
--define(SLOW,101).
--define(RUN,102).
--define(STORE,103).
--define(READ,104).
--define(B_FAST,{?FAST,"plus vite"}).
--define(B_SPARE,{-1,""}).
--define(B_SLOW,{?SLOW,"moins vite"}).
--define(B_RUN,{?RUN,"marche/arret"}).
--define(B_STORE,{?STORE,"enregistrer"}).
--define(B_READ,{?READ,"lire"}).
--define(BLIST,[?B_FAST,?B_RUN,?B_SLOW,?B_STORE,?B_READ,?B_SPARE]).
 
 -record(state,{frame   %% la fentre principale
 			,panel     %% la zonne d'affichage des cellule
@@ -46,6 +31,7 @@
 		,setcell/2
 		,info/1
 		,freeze/1
+		,enable/0
 		]).
 
 %%
@@ -61,9 +47,10 @@ start_link() ->
 	start_link(200,50,2).
 start_link(W,H,Z) ->
     wx:new(),
-%%    wx:debug(driver),
+    % {wx_ref,_Id,_WxType,Pid} = wx_object:start_link(?MODULE, [W,H,Z], [{debug,[trace]}]),
     {wx_ref,_Id,_WxType,Pid} = wx_object:start_link(?MODULE, [W,H,Z], []),
     register(?SERVER,Pid),
+	io:format("start_link lavie_wx; pid = ~p, server = ~p~n",[Pid,?SERVER]),
     {ok,Pid}.
 
 init([W,H,Z]) ->
@@ -84,6 +71,9 @@ freeze(true) ->
 freeze(false) ->
 	wx_object:cast(?SERVER,thaw).
 
+enable() ->
+	wx_object:cast(?SERVER,enable).
+
 
 %%%%%%%%%%%%%%%%%%%%% Server callbacks %%%%%%%%%%%%%
 
@@ -103,17 +93,21 @@ handle_info(M,S = #state{frame=F}) ->
 
 handle_event(#wx{id=?MAIN,event=#wxClose{}}, S) ->
     {stop, shutdown, S};
-handle_event(#wx{id=?CHILD,obj=O,event=#wxClose{}}, S) ->
+handle_event(#wx{id=?CHILD,obj=O,event=#wxClose{}}, #state{frame=F} = S) ->
 	wxFrame:destroy(O),
+	enable(F),
+	wxWindow:setFocus(F),
     {noreply, S};
-handle_event(#wx{id=?WSTORE,obj=O,event = #wxFileDirPicker{type = command_filepicker_changed, path = Path}}, State) ->
+handle_event(#wx{id=?WSTORE,obj=O,event = #wxFileDirPicker{type = command_filepicker_changed, path = Path}}, #state{frame=F} = S) ->
 	lavie_fsm:save(Path),
 	wxWindow:destroy(wxFilePickerCtrl:getParent(O)),
-    {noreply, State};
-handle_event(#wx{id=?WREAD,obj=O,event = #wxFileDirPicker{type = command_filepicker_changed, path = Path}}, State) ->
+	enable(F),
+    {noreply, S};
+handle_event(#wx{id=?WREAD,obj=O,event = #wxFileDirPicker{type = command_filepicker_changed, path = Path}}, #state{frame=F} = S) ->
 	lavie_fsm:read(Path),
 	wxWindow:destroy(wxFilePickerCtrl:getParent(O)),
-    {noreply, State};
+	enable(F),
+    {noreply, S};
 handle_event(#wx{event=#wxMouse{type=left_up,x=X,y=Y}},#state{w=W,h=H,zoom=Z}=S) ->
     lavie_server:click(min(X,W-2) div (Z+1), min(Y,H-2) div (Z+1)),
     {noreply,S};
@@ -124,7 +118,7 @@ handle_event(#wx{event=#wxMouse{type=right_down}},S) ->
     lavie_fsm:right_down(),
     {noreply,S};
 handle_event(#wx{event=#wxCommand{type=command_button_clicked},id=Id},#state{frame=F} = S) ->
-    M = keypress(Id),
+    M = keypress(Id,F),
 	wxFrame:setStatusText(F,M,[]),
     {noreply,S};
 handle_event(E, #state{frame=F}= S) ->
@@ -134,12 +128,12 @@ handle_event(E, #state{frame=F}= S) ->
     {noreply,S}.
 
 
-handle_call({setcell,Etat,Cell},_From, #state{clientDC=ClientDC, panel=Panel, bitmap=Bitmap, w=W, h=H,zoom=Z, penlive=PV, pendead=PM, brushlive=BV, brushdead=BM} = State) ->
+handle_call({setcell,Etat,Cell},_From, #state{clientDC=ClientDC, bitmap=Bitmap, w=W, h=H,zoom=Z, penlive=PV, pendead=PM, brushlive=BV, brushdead=BM} = State) ->
 	{Pen,Brush} = case Etat of
 		live -> {PV,BV};
 		dead -> {PM,BM}
 	end,
-	setcell(ClientDC, Panel, Pen, Brush, Cell, Bitmap, W, H, Z),
+	setcell(ClientDC, Pen, Brush, Cell, Bitmap, W, H, Z),
     {reply, ok, State};
 handle_call(What, _From, State) ->
     {stop, {call, What}, State}.
@@ -152,6 +146,10 @@ handle_cast(freeze, #state{panel=P} = State) ->
     {noreply, State};
 handle_cast(thaw, #state{panel=P} = State) ->
 	wxWindow:thaw(P),
+    {noreply, State};
+handle_cast(enable, #state{frame=F} = State) ->
+	wxWindow:enable(F),
+	wxWindow:setFocus(F),
     {noreply, State};
 handle_cast(_What, State) ->
     {noreply, State}.
@@ -249,34 +247,38 @@ redraw(DC, Bitmap, W, H) ->
 cell(DC,{Orx,Ory},Z) ->
 	wxDC:drawRectangle(DC, {(Z+1)*Orx+1,(Z+1)*Ory+1}, {Z,Z}).
 
-setcell(DC,Panel,Pen,Brush,Cell,Bitmap,W,H,Z) when is_list(Cell) ->
-    % wxWindow:freeze(Panel),
+setcell(DC,Pen,Brush,Cell,Bitmap,W,H,Z) when is_list(Cell) ->
     MemoryDC = wxMemoryDC:new(Bitmap),
 	wxDC:setPen(MemoryDC,Pen),
 	wxDC:setBrush(MemoryDC,Brush),
     [cell(MemoryDC,Pos,Z) || Pos <- Cell],
     wxDC:blit(DC, {0,0},{W,H},MemoryDC, {0,0}),
     wxMemoryDC:destroy(MemoryDC);
-    % wxWindow:thaw(Panel);	    
-setcell(DC,Panel,Pen,Brush,Cell,Bitmap,W,H,Z) ->
-    setcell(DC,Panel,Pen,Brush,[Cell],Bitmap,W,H,Z).
+setcell(DC,Pen,Brush,Cell,Bitmap,W,H,Z) ->
+    setcell(DC,Pen,Brush,[Cell],Bitmap,W,H,Z).
 
-keypress(?FAST) ->
+keypress(?FAST,_F) ->
 	lavie_fsm:faster(),
 	"accelère";
-keypress(?SLOW) ->
+keypress(?SLOW,_F) ->
 	lavie_fsm:slower(),
 	"ralenti";
-keypress(?RUN) ->
+keypress(?RUN,_F) ->
     lavie_fsm:dclick(),
     "marche/arret";
-keypress(?STORE) ->
+keypress(?STORE,F) ->
+	wxWindow:disable(F),
 	accesfichier("enregistrer",?WSTORE, ?wxFLP_SAVE bor ?wxFLP_OVERWRITE_PROMPT),
     "enregistrer";
-keypress(?READ) ->
+keypress(?READ,F) ->
+	wxWindow:disable(F),
 	accesfichier("lire",?WREAD, ?wxFLP_OPEN bor ?wxFLP_FILE_MUST_EXIST),
     "lire";
-keypress(_) ->
+keypress(?RULE,F) ->
+	wxWindow:disable(F),
+	changerule(),
+    "Changement des regles";
+keypress(_,_F) ->
     "pas defini".
 
 accesfichier(Titre,Id,Style) ->
@@ -294,3 +296,9 @@ accesfichier(Titre,Id,Style) ->
     wxFilePickerCtrl:connect(FilePicker, command_filepicker_changed, []),
     wxWindow:show(T).
 
+changerule() ->
+	rule_wx:start_link().
+
+enable(F) ->
+	wxWindow:enable(F),
+	wxWindow:setFocus(F).

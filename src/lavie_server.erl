@@ -29,7 +29,8 @@
 		reset/0,
 		config/0,
 		save/1,
-		read/1]).
+		read/1,
+		getrule/0]).
 
 %% gen_server callbacks
 -export([init/1,
@@ -97,6 +98,8 @@ read(F) ->
 	gen_server:call(?SERVER,{read,F}).
 save(F) ->
 	gen_server:call(?SERVER,{save,F}).
+getrule() ->
+	gen_server:call(?SERVER,getrule).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -166,6 +169,10 @@ handle_call({read,F}, _From, State) ->
 		{ok,Term} = erl_parse:parse_term(Tokens),
 		Reply = load(Term,State#state.br,State#state.sr),
         {reply, {value,Reply}, State};		
+handle_call(getrule, _From, State) ->
+	io:format("getrule in server~n"),
+		Reply = ok,
+        {reply, {value,Reply}, State};
 handle_call(_Request, _From, State) ->
         Reply = ok,
         {reply, Reply, State}.

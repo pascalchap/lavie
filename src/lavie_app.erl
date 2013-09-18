@@ -16,8 +16,9 @@ start(_StartType, [W1,H1,Z1]) ->
     lavie_sup:start_link([W,H,Z]).
 
 stop(_State) ->
-	init:stop().
-	
+	% init:stop().
+	ok.
+		
 get(Name,Def) ->
 	case init:get_argument(Name) of
 		{ok,[[L]]} -> list_to_integer(L);

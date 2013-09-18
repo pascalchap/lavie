@@ -132,17 +132,15 @@ init([]) ->
 config(config_done, State) ->
         lavie_server:info(),
         Pid = newCycle(State#state.cycle),
-        lavie_wx:info(wait_info_finished),
+        lavie_wx:info(marche),
        {next_state, wait_info_finished, State#state{pidcycle=Pid}}.
 
 wait_info_finished(info_finished, State) ->
         lavie_server:update(),
-        lavie_wx:info(wait_update_finished),
         {next_state, wait_update_finished, State}.
 
 wait_update_finished(update_finished, State) ->
         lavie_server:birdth(),
-        lavie_wx:info(wait_born_finished),
         {next_state, wait_born_finished, State}.
 
 wait_born_finished(born_finished, State) when   State#state.standby == true ->
@@ -152,18 +150,15 @@ wait_born_finished(born_finished, State) when   State#state.standby == true ->
         {next_state, standby, State};
 wait_born_finished(born_finished, State) when   State#state.endCycle == true ->
         lavie_wx:freeze(false),
-        lavie_wx:info(idle),
         wait_20ms(),
         {next_state, idle, State#state{endCycle=false}};
 wait_born_finished(born_finished, State) ->
         lavie_wx:freeze(false),
-        lavie_wx:info(wait_cycle),
         {next_state, wait_cycle, State}.
 
 idle(done20ms,State) ->
         lavie_server:info(),
         Pid = newCycle(State#state.cycle),
-        lavie_wx:info(wait_info_finished),
         {next_state, wait_info_finished, State#state{pidcycle=Pid}}.
 
 
@@ -185,6 +180,7 @@ handle_event(dclick, config, State) ->
         lavie_wx:info(config),
         {next_state, config, State};
 handle_event(dclick, standby, State) ->
+        lavie_wx:info(marche),
         idle(),
         {next_state, idle, State#state{standby=false}};
 handle_event(dclick, StateName, State) ->
@@ -319,5 +315,4 @@ newCycle(T) ->
 
 idle() ->
         lavie_wx:freeze(true),
-        lavie_wx:info(idle),
         wait_20ms().
