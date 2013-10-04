@@ -61,6 +61,7 @@ start(X,Y,Neighbors,Rand,Live) ->
 %%--------------------------------------------------------------------
 init([X,Y,Neighbors,Rand,Live]) ->
 		ets:update_element(cells,{X,Y},[{2,self()},{4,0}]),
+		lavie_wx:setcell(live,{X,Y}),
 		lavie_server:born(),
 		random:seed(Rand),
         {ok, #state{x=X,y=Y,neighbors=Neighbors,livefun=Live}}.
@@ -139,7 +140,8 @@ handle_info(_Info, State) ->
 %% @spec terminate(Reason, State) -> void()
 %% @end
 %%--------------------------------------------------------------------
-terminate(_Reason, _State) ->
+terminate(_Reason, #state{x=X,y=Y}) ->
+	lavie_wx:setcell(dead,{X,Y}),
     ok.
 
 %%--------------------------------------------------------------------
@@ -160,10 +162,9 @@ code_change(_OldVsn, State, _Extra) ->
 do_update(X,Y,#state{livefun=Live,age=A} = State) ->
 	{value,S} = lavie_server:state(X,Y),
 	case Live(S) of
-		true -> lavie_server:survive(X,Y),
+		true -> ets:update_element(cells,{X,Y},{4,0}),
 				{noreply, State#state{age=A+1}};
-		false -> lavie_server:die(X,Y),
-				ets:update_element(cells,{X,Y},[{2,empty},{4,0}]),
+		false -> ets:update_element(cells,{X,Y},[{2,empty},{4,0}]),
 				{stop, normal, State}
 	end.
 

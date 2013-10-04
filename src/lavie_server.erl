@@ -14,8 +14,6 @@
 		create_world/0,
 		init_world/0,
 		new_world/0,
-		survive/2,
-		die/2,
 		state/2,
 		birdth/0,
 		info/0,
@@ -65,10 +63,6 @@ state(X,Y) ->
 	gen_server:call(?SERVER,{state,X,Y}).
 multicast(Msg) ->
 	gen_server:cast(?SERVER,{multicast,Msg}).
-survive(X,Y) ->
-	gen_server:cast(?SERVER,{survive,X,Y}).
-die(X,Y) ->
-	gen_server:cast(?SERVER,{die,X,Y}).
 birdth() ->
 	gen_server:cast(?SERVER,birdth).
 done_info() ->
@@ -253,12 +247,6 @@ handle_cast(done_update, #state{update=A} = State) ->
 		_ -> ok
 	end,
     {noreply, State#state{update=A-1}};
-handle_cast({survive,X,Y}, State) ->
-	ets:update_element(cells,{X,Y},{4,0}),
-    {noreply, State};
-handle_cast({die,X,Y}, State) ->
-	lavie_wx:setcell(dead,{X,Y}),
-    {noreply, State};
 handle_cast(info_finished, State) when State#state.init == true ->
 	lavie_fsm:info_finished(),
     {noreply, State};
@@ -347,10 +335,8 @@ do_multicast(Msg,MSA) ->
 do_toggle(X,Y,F) ->
 	[{_,P,Neighbors,_}] = ets:lookup(cells,{X,Y}),
 	case P of
-		empty -> 	newCell(X,Y,Neighbors,F),
-					lavie_wx:setcell(live,{X,Y});
-		_ -> 		cell:stop(P),
-					lavie_wx:setcell(dead,{X,Y})
+		empty -> 	newCell(X,Y,Neighbors,F);
+		_ -> 		cell:stop(P)
 	end.
 
 newCell(X,Y,Neighbors,F) ->
@@ -387,7 +373,6 @@ setlive(L,Fa) ->
 	F = fun({P,N,_}) -> {P,N};(P) -> P end,
 	L1 = [F(X) || X <- L],
 	lists:foreach(fun({{X,Y},N}) -> cell(X,Y,N,Fa) end,L1),
-	lavie_wx:setcell(live,[X || {X,_} <- L1]),
 	length(L1).
 
 cell(X,Y,N,F) ->
