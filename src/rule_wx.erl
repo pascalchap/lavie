@@ -15,7 +15,6 @@
      terminate/2, code_change/3,handle_sync_event/3]).
 
 start_link() ->
-    % Pid = wx_object:start_link({local,?SERVER},?MODULE, [], [{debug,[trace,debug]}]),
     Pid = wx_object:start_link({local,?SERVER},?MODULE, [], []),
     {ok,Pid}.
 

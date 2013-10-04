@@ -3,7 +3,7 @@
 -behaviour(gen_server).
 
 %% API
--export([start/3,
+-export([start/5,
 		get_neighbor/1,
 		stop/1,
 		cast/2]).
@@ -18,7 +18,7 @@
 
 -define(SERVER, ?MODULE).
 
--record (state, {alive = false, x, y, neighbors=[]}).
+-record (state, {alive = false, x, y, neighbors=[],livefun,age=0}).
 
 %%%===================================================================
 %%% API
@@ -41,8 +41,8 @@ cast(P,Msg) ->
 %% @spec start(integer(),integer(),[tuple()]) -> {ok, Pid} | ignore | {error, Error}
 %% @end
 %%--------------------------------------------------------------------
-start(X,Y,Neighbors) ->
-        gen_server:start(?MODULE, [X,Y,Neighbors], []).
+start(X,Y,Neighbors,Rand,Live) ->
+        gen_server:start(?MODULE, [X,Y,Neighbors,Rand,Live], []).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -59,10 +59,11 @@ start(X,Y,Neighbors) ->
 %% {stop, Reason}
 %% @end
 %%--------------------------------------------------------------------
-init([X,Y,Neighbors]) ->
-		ets:update_element(cells,{X,Y},[{2,self()},{4,0},{5,0}]),
+init([X,Y,Neighbors,Rand,Live]) ->
+		ets:update_element(cells,{X,Y},[{2,self()},{4,0}]),
 		lavie_server:born(),
-        {ok, #state{x=X,y=Y,neighbors=Neighbors}}.
+		random:seed(Rand),
+        {ok, #state{x=X,y=Y,neighbors=Neighbors,livefun=Live}}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -96,14 +97,14 @@ handle_cast(get_neighbor, #state{x=X,y=Y} = State) ->
 		{value,Neighbors} = lavie_server:get_neighbor(X,Y),
         {noreply, State#state{neighbors=Neighbors}};
 handle_cast(stop,#state{x=X,y=Y} = State) ->
-		ets:update_element(cells,{X,Y},[{2,empty},{4,0},{5,0}]),
+		ets:update_element(cells,{X,Y},[{2,empty},{4,0}]),
 		{stop, normal, State};
 handle_cast({cast,reset}, #state{x=X,y=Y} = State) ->
-		ets:update_element(cells,{X,Y},[{2,empty},{4,0},{5,0}]),
+		ets:update_element(cells,{X,Y},[{2,empty},{4,0}]),
 		lavie_server:die(X,Y),
 		{stop, normal, State};
 handle_cast({cast,info_neighbors},#state{neighbors = Neighbors} = State) ->
-		[ets:update_counter(cells,X,{5,1}) || X <- Neighbors],
+		[ets:update_counter(cells,X,{4,1}) || X <- Neighbors],
 		lavie_server:done_info(),
 		{noreply, State};
 handle_cast({cast,update}, #state{x=X,y=Y} = State) -> 
@@ -156,16 +157,13 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%%===================================================================
 
-do_update(X,Y,State) ->
+do_update(X,Y,#state{livefun=Live,age=A} = State) ->
 	{value,S} = lavie_server:state(X,Y),
-	case live(S) of
+	case Live(S) of
 		true -> lavie_server:survive(X,Y),
-				{noreply, State};
+				{noreply, State#state{age=A+1}};
 		false -> lavie_server:die(X,Y),
-				ets:update_element(cells,{X,Y},[{2,empty},{4,0},{5,0}]),
+				ets:update_element(cells,{X,Y},[{2,empty},{4,0}]),
 				{stop, normal, State}
 	end.
-
-live({_,_,_,_,N}) when N > 1, N < 4 -> true;
-live(_) -> false.
 

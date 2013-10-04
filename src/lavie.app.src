@@ -2,7 +2,7 @@
  [
   {description, "Le jeu de la vie selon Conway"},
   {vsn, "1.1.0"},
-  {registered, [lavie_sup,lavie_wx,lavie_fsm,lavie_server]},
+  {registered, [lavie_sup,lavie_wx,lavie_fsm,lavie_server,rule_wx]},
   {applications, [
                   kernel,
                   stdlib

@@ -103,10 +103,12 @@ handle_event(#wx{id=?WSTORE,obj=O,event = #wxFileDirPicker{type = command_filepi
 	wxWindow:destroy(wxFilePickerCtrl:getParent(O)),
 	enable(F),
     {noreply, S};
-handle_event(#wx{id=?WREAD,obj=O,event = #wxFileDirPicker{type = command_filepicker_changed, path = Path}}, #state{frame=F} = S) ->
+handle_event(#wx{id=?WREAD,obj=O,event = #wxFileDirPicker{type = command_filepicker_changed, path = Path}}, #state{frame=F,panel=P} = S) ->
 	lavie_fsm:read(Path),
 	wxWindow:destroy(wxFilePickerCtrl:getParent(O)),
+	wxWindow:thaw(P),
 	enable(F),
+	wxWindow:freeze(P),
     {noreply, S};
 handle_event(#wx{event=#wxMouse{type=left_up,x=X,y=Y}},#state{w=W,h=H,zoom=Z}=S) ->
     lavie_server:click(min(X,W-2) div (Z+1), min(Y,H-2) div (Z+1)),

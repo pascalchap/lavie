@@ -17,7 +17,7 @@
          update_finished/0,
          born_finished/0,
          idle/2,
-         period/1,
+         % period/1,
          dclick/0,
          right_down/0,
          middle_down/0,
@@ -41,7 +41,7 @@
 
 -define(SERVER, ?MODULE).
 
--record(state, {endCycle=false,cycle=20,standby=false,pidcycle,do_save=false,do_read=false}).
+-record(state, {endCycle=false,cycle=20,standby=false,pidcycle,do_save=false,do_read=false,generation=0}).
 
 %%%===================================================================
 %%% API
@@ -71,8 +71,8 @@ update_finished() ->
 born_finished() ->
         gen_fsm:send_event(?SERVER,born_finished).        
 
-period(T) -> 
-        gen_fsm:send_all_state_event(?SERVER,{newPeriod,max(T,20)}).       
+% period(T) -> 
+%         gen_fsm:send_all_state_event(?SERVER,{newPeriod,max(T,20)}).       
 
 dclick() -> 
         gen_fsm:send_all_state_event(?SERVER,dclick).       
@@ -113,7 +113,8 @@ read(N) ->
 %%--------------------------------------------------------------------
 init([]) ->
         lavie_wx:info(config),
-        {ok, config, #state{}}.
+        lavie_server:init_world(),
+        {ok, config, #state{standby = true}}.
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -129,10 +130,10 @@ init([]) ->
 %% {stop, Reason, NewState}
 %% @end
 %%--------------------------------------------------------------------
-config(config_done, State) ->
+config(config_done, #state{generation=A} = State) ->
         lavie_server:info(),
         Pid = newCycle(State#state.cycle),
-        lavie_wx:info(marche),
+        lavie_wx:info(io_lib:format("marche    -> generation ~p",[A])),
        {next_state, wait_info_finished, State#state{pidcycle=Pid}}.
 
 wait_info_finished(info_finished, State) ->
@@ -143,11 +144,19 @@ wait_update_finished(update_finished, State) ->
         lavie_server:birdth(),
         {next_state, wait_born_finished, State}.
 
-wait_born_finished(born_finished, State) when   State#state.standby == true ->
+wait_born_finished(born_finished, #state{generation=A,standby=true} = State) ->
         State#state.pidcycle ! stop,
+        case State#state.do_read of
+                false -> false;
+                F1 -> do_read(F1)
+        end,
+        case State#state.do_save of
+                false -> false;
+                F2 -> lavie_server:save(F2)
+        end,
         lavie_wx:freeze(false),
-        lavie_wx:info(standby),
-        {next_state, standby, State};
+        lavie_wx:info(io_lib:format("standby   -> generation ~p",[A])),
+        {next_state, standby, State#state{do_read=false,do_save=false}};
 wait_born_finished(born_finished, State) when   State#state.endCycle == true ->
         lavie_wx:freeze(false),
         wait_20ms(),
@@ -156,10 +165,10 @@ wait_born_finished(born_finished, State) ->
         lavie_wx:freeze(false),
         {next_state, wait_cycle, State}.
 
-idle(done20ms,State) ->
+idle(done20ms,#state{generation=A} = State) ->
         lavie_server:info(),
         Pid = newCycle(State#state.cycle),
-        {next_state, wait_info_finished, State#state{pidcycle=Pid}}.
+        {next_state, wait_info_finished, State#state{pidcycle=Pid,generation=A+1}}.
 
 
 
@@ -176,11 +185,11 @@ idle(done20ms,State) ->
 %% @end
 %%--------------------------------------------------------------------
 handle_event(dclick, config, State) ->
-        lavie_server:init_world([]),
-        lavie_wx:info(config),
+        lavie_server:init_world(),
+        lavie_wx:info(io_lib:format("config    -> generation 0",[])),
         {next_state, config, State};
-handle_event(dclick, standby, State) ->
-        lavie_wx:info(marche),
+handle_event(dclick, standby, #state{generation=A} = State) ->
+        lavie_wx:info(io_lib:format("marche    -> generation ~p",[A])),
         idle(),
         {next_state, idle, State#state{standby=false}};
 handle_event(dclick, StateName, State) ->
@@ -189,8 +198,8 @@ handle_event(dclick, StateName, State) ->
 
 handle_event(middle_down, standby, State) ->
         lavie_server:config(),
-        lavie_wx:info(config),
-        {next_state, config, State#state{standby=false}};
+        lavie_wx:info(io_lib:format("config    -> generation 0",[])),
+        {next_state, config, State#state{standby=false,generation=0}};
 handle_event(middle_down, config, State) ->
         lavie_server:reset(),
         {next_state, config, State};
@@ -199,8 +208,8 @@ handle_event(right_down, standby, State) ->
         idle(),
         {next_state, idle, State#state{standby=true}};
 
-handle_event({newPeriod,P}, StateName, State) ->
-        {next_state, StateName, State#state{cycle=P}};
+% handle_event({newPeriod,P}, StateName, State) ->
+%         {next_state, StateName, State#state{cycle=P}};
 
 handle_event(faster, StateName, #state{cycle = P} = State) ->
         NewP = max(round(P/1.2),20),
@@ -223,15 +232,13 @@ handle_event({save,F}, StateName, State) when StateName == config; StateName == 
         lavie_server:save(F),
         {next_state, StateName, State};
 handle_event({save,F}, StateName, State) ->
-        {next_state, StateName, State#state{do_save=true}};
+        {next_state, StateName, State#state{do_save=F,standby=true}};
 
 handle_event({read,F}, StateName, State) when StateName == config; StateName == standby ->
-        lavie_wx:freeze(true),
-        lavie_server:read(F),
-        lavie_wx:freeze(false),
+        read(F),
         {next_state, StateName, State};
 handle_event({read,F}, StateName, State) ->
-        {next_state, StateName, State#state{do_read=true}};
+        {next_state, StateName, State#state{do_read=F,standby=true}};
 
 handle_event(Event, StateName, #state{cycle=C}) ->
         M = io_lib:format("Ignore Event ~p during state ~p",[Event,StateName]),
@@ -316,3 +323,9 @@ newCycle(T) ->
 idle() ->
         lavie_wx:freeze(true),
         wait_20ms().
+
+
+do_read(F) ->
+        lavie_wx:freeze(true),
+        lavie_server:read(F),
+        lavie_wx:freeze(false).
