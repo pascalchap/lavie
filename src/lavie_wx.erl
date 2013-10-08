@@ -21,6 +21,8 @@
 			,brushlive %% crayon pour dessiner les cellules vivantes
 			,brushdead %% crayon pour dessiner les cellules mortes
 			,zoom	   %% taille des cellules
+			,cellbuf   = [] %% liste des cellules en attente de rafraichissement
+			,refreshtoggle = true
 			}).
 
 %%
@@ -30,8 +32,9 @@
 		,start_link/3
 		,setcell/2
 		,info/1
-		,freeze/1
 		,enable/0
+		,refresh/0
+		,refreshtoggle/1
 		]).
 
 %%
@@ -66,10 +69,13 @@ info(M) when is_atom(M) ->
 info(M) ->
 	wx_object:cast(?SERVER,{info,M}).
 
-freeze(true) ->
-	wx_object:cast(?SERVER,freeze);
-freeze(false) ->
-	wx_object:cast(?SERVER,thaw).
+refreshtoggle(true) ->
+	wx_object:cast(?SERVER,refreshtoggle);
+refreshtoggle(false) ->
+	wx_object:cast(?SERVER,norefreshtoggle).
+
+refresh() ->
+	wx_object:call(?SERVER,refresh).
 
 enable() ->
 	wx_object:cast(?SERVER,enable).
@@ -92,6 +98,7 @@ handle_info(M,S = #state{frame=F}) ->
     {noreply, S}.
 
 handle_event(#wx{id=?MAIN,event=#wxClose{}}, S) ->
+	lavie_server:reset(),
     {stop, shutdown, S};
 handle_event(#wx{id=?CHILD,obj=O,event=#wxClose{}}, #state{frame=F} = S) ->
 	wxFrame:destroy(O),
@@ -103,12 +110,10 @@ handle_event(#wx{id=?WSTORE,obj=O,event = #wxFileDirPicker{type = command_filepi
 	wxWindow:destroy(wxFilePickerCtrl:getParent(O)),
 	enable(F),
     {noreply, S};
-handle_event(#wx{id=?WREAD,obj=O,event = #wxFileDirPicker{type = command_filepicker_changed, path = Path}}, #state{frame=F,panel=P} = S) ->
+handle_event(#wx{id=?WREAD,obj=O,event = #wxFileDirPicker{type = command_filepicker_changed, path = Path}}, #state{frame=F} = S) ->
 	lavie_fsm:read(Path),
 	wxWindow:destroy(wxFilePickerCtrl:getParent(O)),
-	wxWindow:thaw(P),
 	enable(F),
-	wxWindow:freeze(P),
     {noreply, S};
 handle_event(#wx{event=#wxMouse{type=left_up,x=X,y=Y}},#state{w=W,h=H,zoom=Z}=S) ->
     lavie_server:click(min(X,W-2) div (Z+1), min(Y,H-2) div (Z+1)),
@@ -129,26 +134,24 @@ handle_event(E, #state{frame=F}= S) ->
     wxFrame:setStatusText(F,M,[]),
     {noreply,S}.
 
-
-handle_call({setcell,Etat,Cell},_From, #state{clientDC=ClientDC, bitmap=Bitmap, w=W, h=H,zoom=Z, penlive=PV, pendead=PM, brushlive=BV, brushdead=BM} = State) ->
-	{Pen,Brush} = case Etat of
-		live -> {PV,BV};
-		dead -> {PM,BM}
-	end,
-	setcell(ClientDC, Pen, Brush, Cell, Bitmap, W, H, Z),
-    {reply, ok, State};
+handle_call(refresh, _From, #state{cellbuf=Cb,clientDC=ClientDC, bitmap=Bitmap, w=W, h=H,zoom=Z, penlive=PV, pendead=PM, brushlive=BV, brushdead=BM,panel=P} = State) ->
+	do_refresh(Cb,ClientDC,Bitmap,W,H,Z,PV,PM,BV,BM,P),
+    {reply, ok, State#state{cellbuf=[]}};
+handle_call({setcell,Etat,Cell}, _From, #state{cellbuf=Cb,clientDC=ClientDC, bitmap=Bitmap, w=W, h=H,zoom=Z, penlive=PV, pendead=PM, brushlive=BV, brushdead=BM,panel=P,refreshtoggle=true} = State) ->
+	do_refresh([{Etat,Cell}|Cb],ClientDC,Bitmap,W,H,Z,PV,PM,BV,BM,P),
+    {reply, ok, State#state{cellbuf=[]}};
+handle_call({setcell,Etat,Cell}, _From, #state{cellbuf=Cb} = State) ->
+    {reply, ok, State#state{cellbuf=[{Etat,Cell}|Cb]}};
 handle_call(What, _From, State) ->
     {stop, {call, What}, State}.
 
 handle_cast({info,M}, #state{frame=F} = State) ->
 	wxFrame:setStatusText(F,M,[]),
     {noreply, State};
-handle_cast(freeze, #state{panel=P} = State) ->
-	wxWindow:freeze(P),
-    {noreply, State};
-handle_cast(thaw, #state{panel=P} = State) ->
-	wxWindow:thaw(P),
-    {noreply, State};
+handle_cast(refreshtoggle, State) ->
+    {noreply, State#state{refreshtoggle=true}};
+handle_cast(norefreshtoggle, State) ->
+    {noreply, State#state{refreshtoggle=false}};
 handle_cast(enable, #state{frame=F} = State) ->
 	wxWindow:enable(F),
 	wxWindow:setFocus(F),
@@ -209,8 +212,6 @@ fill_window(W,H,Frame,Z) ->
     wxWindow:connect(Board, command_button_clicked),
     wxSizer:layout(MainSz),
 
-	wxWindow:freeze(Panel),
-
 	ClientDC = wxClientDC:new(Panel),
 	Bitmap = wxBitmap:new(W,H),
 	PM = wxPen:new(color(dead), [{width, 1}]),
@@ -234,7 +235,6 @@ fill_window(W,H,Frame,Z) ->
 
     wxWindow:refresh(Panel),    
     wxWindow:show(Frame),
-    wxWindow:thaw(Panel),
     {Frame, Panel, Bitmap, ClientDC, PV, PM, BV, BM}.
 
 color(live) -> {255,255,255};
@@ -245,19 +245,6 @@ redraw(DC, Bitmap, W, H) ->
     MemoryDC = wxMemoryDC:new(Bitmap),
     wxDC:blit(DC, {0,0},{W,H},MemoryDC, {0,0}),
     wxMemoryDC:destroy(MemoryDC).
-
-cell(DC,{Orx,Ory},Z) ->
-	wxDC:drawRectangle(DC, {(Z+1)*Orx+1,(Z+1)*Ory+1}, {Z,Z}).
-
-setcell(DC,Pen,Brush,Cell,Bitmap,W,H,Z) when is_list(Cell) ->
-    MemoryDC = wxMemoryDC:new(Bitmap),
-	wxDC:setPen(MemoryDC,Pen),
-	wxDC:setBrush(MemoryDC,Brush),
-    [cell(MemoryDC,Pos,Z) || Pos <- Cell],
-    wxDC:blit(DC, {0,0},{W,H},MemoryDC, {0,0}),
-    wxMemoryDC:destroy(MemoryDC);
-setcell(DC,Pen,Brush,Cell,Bitmap,W,H,Z) ->
-    setcell(DC,Pen,Brush,[Cell],Bitmap,W,H,Z).
 
 keypress(?FAST,_F) ->
 	lavie_fsm:faster(),
@@ -304,3 +291,27 @@ changerule() ->
 enable(F) ->
 	wxWindow:enable(F),
 	wxWindow:setFocus(F).
+
+do_refresh(Cb,ClientDC,Bitmap,W,H,Z,PV,PM,BV,BM,P) ->
+	wx:batch(fun ()  ->
+		wxWindow:freeze(P),
+		Cb1 = lists:reverse(Cb),
+   		MemoryDC = wxMemoryDC:new(Bitmap),
+		[cell(MemoryDC,PV,BV,PM,BM,State,Cell,Z) || {State,Cell} <- Cb1],
+    	wxDC:blit(ClientDC, {0,0},{W,H},MemoryDC, {0,0}),
+    	wxMemoryDC:destroy(MemoryDC),
+		wxWindow:thaw(P)
+	end).
+
+cell(MemoryDC,_PV,_BV,PM,BM,dead,{Orx,Ory},Z) ->
+	wxDC:setPen(MemoryDC,PM),
+	wxDC:setBrush(MemoryDC,BM),
+	wxDC:drawRectangle(MemoryDC, {(Z+1)*Orx+1,(Z+1)*Ory+1}, {Z,Z});
+cell(MemoryDC,PV,BV,_PM,_BM,live,{Orx,Ory},Z) ->
+	wxDC:setPen(MemoryDC,PV),
+	wxDC:setBrush(MemoryDC,BV),
+	wxDC:drawRectangle(MemoryDC, {(Z+1)*Orx+1,(Z+1)*Ory+1}, {Z,Z}).
+
+cell(MemoryDC, {Orx,Ory},Z) ->
+	wxDC:drawRectangle(MemoryDC, {(Z+1)*Orx+1,(Z+1)*Ory+1}, {Z,Z}).
+

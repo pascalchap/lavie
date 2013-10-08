@@ -101,8 +101,7 @@ handle_cast(stop,#state{x=X,y=Y} = State) ->
 		ets:update_element(cells,{X,Y},[{2,empty},{4,0}]),
 		{stop, normal, State};
 handle_cast({cast,reset}, #state{x=X,y=Y} = State) ->
-		ets:update_element(cells,{X,Y},[{2,empty},{4,0}]),
-		lavie_server:die(X,Y),
+		catch ets:update_element(cells,{X,Y},[{2,empty},{4,0}]),
 		{stop, normal, State};
 handle_cast({cast,info_neighbors},#state{neighbors = Neighbors} = State) ->
 		[ets:update_counter(cells,X,{4,1}) || X <- Neighbors],
@@ -141,7 +140,7 @@ handle_info(_Info, State) ->
 %% @end
 %%--------------------------------------------------------------------
 terminate(_Reason, #state{x=X,y=Y}) ->
-	lavie_wx:setcell(dead,{X,Y}),
+	catch lavie_wx:setcell(dead,{X,Y}),
     ok.
 
 %%--------------------------------------------------------------------
