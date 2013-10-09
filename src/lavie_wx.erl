@@ -88,7 +88,6 @@ enable() ->
 %% otherwise nothing will be drawn on windows.
 handle_sync_event(#wx{event = #wxPaint{}}, _wxObj, #state{panel=Panel, bitmap=Bitmap, w=W, h=H}) ->
     DC = wxPaintDC:new(Panel),	
-    redraw(DC, Bitmap, W, H),
     wxPaintDC:destroy(DC),
     ok.
 
@@ -243,7 +242,6 @@ color(background) -> {0,0,40}.
 
 redraw(DC, Bitmap, W, H) ->
     MemoryDC = wxMemoryDC:new(Bitmap),
-    wxDC:blit(DC, {0,0},{W,H},MemoryDC, {0,0}),
     wxMemoryDC:destroy(MemoryDC).
 
 keypress(?FAST,_F) ->
@@ -294,13 +292,11 @@ enable(F) ->
 
 do_refresh(Cb,ClientDC,Bitmap,W,H,Z,PV,PM,BV,BM,P) ->
 	wx:batch(fun ()  ->
-		wxWindow:freeze(P),
 		Cb1 = lists:reverse(Cb),
    		MemoryDC = wxMemoryDC:new(Bitmap),
 		[cell(MemoryDC,PV,BV,PM,BM,State,Cell,Z) || {State,Cell} <- Cb1],
     	wxDC:blit(ClientDC, {0,0},{W,H},MemoryDC, {0,0}),
-    	wxMemoryDC:destroy(MemoryDC),
-		wxWindow:thaw(P)
+    	wxMemoryDC:destroy(MemoryDC)
 	end).
 
 cell(MemoryDC,_PV,_BV,PM,BM,dead,{Orx,Ory},Z) ->
