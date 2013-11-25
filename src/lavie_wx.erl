@@ -86,7 +86,7 @@ enable() ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Sync event from callback events, paint event must be handled in callbacks
 %% otherwise nothing will be drawn on windows.
-handle_sync_event(#wx{event = #wxPaint{}}, _wxObj, #state{panel=Panel, bitmap=Bitmap, w=W, h=H}) ->
+handle_sync_event(#wx{event = #wxPaint{}}, _wxObj, #state{panel=Panel}) ->
     DC = wxPaintDC:new(Panel),	
     wxPaintDC:destroy(DC),
     ok.
@@ -230,19 +230,14 @@ fill_window(W,H,Frame,Z) ->
 	wxDC:setPen(MemoryDC,PM),
 	wxDC:setBrush(MemoryDC,BM),
     [cell(MemoryDC, {X,Y},Z) || X <- lists:seq(0,W-1), Y <- lists:seq(0,H-1)],
-    redraw(ClientDC,Bitmap,W,H),
 
-    wxWindow:refresh(Panel),    
+    wxWindow:refresh(Panel,[{eraseBackground, false}]),    
     wxWindow:show(Frame),
     {Frame, Panel, Bitmap, ClientDC, PV, PM, BV, BM}.
 
 color(live) -> {255,255,255};
 color(dead) -> {80,80,80};
 color(background) -> {0,0,40}.
-
-redraw(DC, Bitmap, W, H) ->
-    MemoryDC = wxMemoryDC:new(Bitmap),
-    wxMemoryDC:destroy(MemoryDC).
 
 keypress(?FAST,_F) ->
 	lavie_fsm:faster(),
@@ -296,7 +291,8 @@ do_refresh(Cb,ClientDC,Bitmap,W,H,Z,PV,PM,BV,BM,P) ->
    		MemoryDC = wxMemoryDC:new(Bitmap),
 		[cell(MemoryDC,PV,BV,PM,BM,State,Cell,Z) || {State,Cell} <- Cb1],
     	wxDC:blit(ClientDC, {0,0},{W,H},MemoryDC, {0,0}),
-    	wxMemoryDC:destroy(MemoryDC)
+    	wxMemoryDC:destroy(MemoryDC),
+        wxWindow:refresh(P,[{eraseBackground, false}])  
 	end).
 
 cell(MemoryDC,_PV,_BV,PM,BM,dead,{Orx,Ory},Z) ->
