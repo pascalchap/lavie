@@ -13,6 +13,7 @@
 -record(state,{frame   %% la fentre principale
 			,panel     %% la zonne d'affichage des cellule
 			,clientDC  %% device contexte de panel
+            ,memoryDC  %% ???
 			,bitmap    %% le contenu a afficher
 			,w         %% largeur
 			,h         %% hauteur
@@ -57,8 +58,8 @@ start_link(W,H,Z) ->
     {ok,Pid}.
 
 init([W,H,Z]) ->
-    {Frame, Panel, Bitmap, CDC, PV, PM, BV, BM} = wx:batch(fun() -> create_window(W,H,Z) end),
-    {Frame, #state{frame=Frame, panel=Panel, bitmap=Bitmap, clientDC=CDC, w=(Z+1)*W+1, h=(Z+1)*H+1, zoom = Z, 
+    {Frame, Panel, Bitmap, CDC, MDC, PV, PM, BV, BM} = wx:batch(fun() -> create_window(W,H,Z) end),
+    {Frame, #state{frame=Frame, panel=Panel, bitmap=Bitmap, clientDC=CDC, memoryDC=MDC, w=(Z+1)*W+1, h=(Z+1)*H+1, zoom = Z, 
     penlive=PV, pendead=PM, brushlive=BV, brushdead=BM}}.
 
 setcell(Etat,Cell) ->
@@ -86,9 +87,9 @@ enable() ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Sync event from callback events, paint event must be handled in callbacks
 %% otherwise nothing will be drawn on windows.
-handle_sync_event(#wx{event = #wxPaint{}}, _wxObj, #state{panel=Panel, bitmap=Bitmap, w=W, h=H}) ->
+handle_sync_event(#wx{event = #wxPaint{}}, _wxObj, #state{panel=Panel, memoryDC=MDC, w=W, h=H}) ->
     DC = wxPaintDC:new(Panel),	
-    redraw(DC,Bitmap,W,H),
+    redraw(DC,MDC,W,H),
     wxPaintDC:destroy(DC),
     ok.
 
@@ -134,11 +135,11 @@ handle_event(E, #state{frame=F}= S) ->
     wxFrame:setStatusText(F,M,[]),
     {noreply,S}.
 
-handle_call(refresh, _From, #state{cellbuf=Cb,clientDC=ClientDC, bitmap=Bitmap, w=W, h=H,zoom=Z, penlive=PV, pendead=PM, brushlive=BV, brushdead=BM,panel=P} = State) ->
-	do_refresh(Cb,ClientDC,Bitmap,W,H,Z,PV,PM,BV,BM,P),
+handle_call(refresh, _From, #state{cellbuf=Cb, memoryDC=MDC, zoom=Z, penlive=PV, pendead=PM, brushlive=BV, brushdead=BM,panel=P} = State) ->
+	do_refresh(Cb,Z,PV,PM,BV,BM,P,MDC),
     {reply, ok, State#state{cellbuf=[]}};
-handle_call({setcell,Etat,Cell}, _From, #state{cellbuf=Cb,clientDC=ClientDC, bitmap=Bitmap, w=W, h=H,zoom=Z, penlive=PV, pendead=PM, brushlive=BV, brushdead=BM,panel=P,refreshtoggle=true} = State) ->
-	do_refresh([{Etat,Cell}|Cb],ClientDC,Bitmap,W,H,Z,PV,PM,BV,BM,P),
+handle_call({setcell,Etat,Cell}, _From, #state{cellbuf=Cb, memoryDC=MDC, zoom=Z, penlive=PV, pendead=PM, brushlive=BV, brushdead=BM,panel=P,refreshtoggle=true} = State) ->
+	do_refresh([{Etat,Cell}|Cb],Z,PV,PM,BV,BM,P,MDC),
     {reply, ok, State#state{cellbuf=[]}};
 handle_call({setcell,Etat,Cell}, _From, #state{cellbuf=Cb} = State) ->
     {reply, ok, State#state{cellbuf=[{Etat,Cell}|Cb]}};
@@ -231,20 +232,18 @@ fill_window(W,H,Frame,Z) ->
 	wxDC:setPen(MemoryDC,PM),
 	wxDC:setBrush(MemoryDC,BM),
     [cell(MemoryDC, {X,Y},Z) || X <- lists:seq(0,W-1), Y <- lists:seq(0,H-1)],
-    redraw(ClientDC,Bitmap,W,H),
+    redraw(ClientDC,MemoryDC,W,H),
 
     wxWindow:refresh(Panel,[{eraseBackground, false}]),
     wxWindow:show(Frame),
-    {Frame, Panel, Bitmap, ClientDC, PV, PM, BV, BM}.
+    {Frame, Panel, Bitmap, ClientDC, MemoryDC, PV, PM, BV, BM}.
 
 color(live) -> {255,255,255};
 color(dead) -> {80,80,80};
 color(background) -> {0,0,40}.
 
-redraw(DC, Bitmap, W, H) ->
-    MemoryDC = wxMemoryDC:new(Bitmap),
-    wxDC:blit(DC,{0,0},{W,H},MemoryDC,{0,0}),
-    wxMemoryDC:destroy(MemoryDC).
+redraw(DC, MemoryDC, W, H) ->
+    wxDC:blit(DC,{0,0},{W,H},MemoryDC,{0,0}).
 
 keypress(?FAST,_F) ->
 	lavie_fsm:faster(),
@@ -292,14 +291,11 @@ enable(F) ->
 	wxWindow:enable(F),
 	wxWindow:setFocus(F).
 
-do_refresh(Cb,ClientDC,Bitmap,W,H,Z,PV,PM,BV,BM,P) ->
+do_refresh(Cb,Z,PV,PM,BV,BM,P,MemoryDC) ->
 	wx:batch(fun ()  ->
 		Cb1 = lists:reverse(Cb),
-   		MemoryDC = wxMemoryDC:new(Bitmap),
 		[cell(MemoryDC,PV,BV,PM,BM,State,Cell,Z) || {State,Cell} <- Cb1],
-    	wxDC:blit(ClientDC, {0,0},{W,H},MemoryDC, {0,0}),
-	    wxWindow:refresh(P,[{eraseBackground,false}]),
-    	wxMemoryDC:destroy(MemoryDC)
+	    wxWindow:refresh(P,[{eraseBackground,false}])
 	end).
 
 cell(MemoryDC,_PV,_BV,PM,BM,dead,{Orx,Ory},Z) ->
