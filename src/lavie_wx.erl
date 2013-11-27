@@ -12,8 +12,7 @@
 
 -record(state,{frame   %% la fentre principale
 			,panel     %% la zonne d'affichage des cellule
-			,clientDC  %% device contexte de panel
-            ,memoryDC  %% ???
+            ,memoryDC  %% Device contexte en memoire pour preparer les operations de rafraichissement
 			,bitmap    %% le contenu a afficher
 			,w         %% largeur
 			,h         %% hauteur
@@ -58,8 +57,8 @@ start_link(W,H,Z) ->
     {ok,Pid}.
 
 init([W,H,Z]) ->
-    {Frame, Panel, Bitmap, CDC, MDC, PV, PM, BV, BM} = wx:batch(fun() -> create_window(W,H,Z) end),
-    {Frame, #state{frame=Frame, panel=Panel, bitmap=Bitmap, clientDC=CDC, memoryDC=MDC, w=(Z+1)*W+1, h=(Z+1)*H+1, zoom = Z, 
+    {Frame, Panel, Bitmap, MDC, PV, PM, BV, BM} = wx:batch(fun() -> create_window(W,H,Z) end),
+    {Frame, #state{frame=Frame, panel=Panel, bitmap=Bitmap, memoryDC=MDC, w=(Z+1)*W+1, h=(Z+1)*H+1, zoom = Z, 
     penlive=PV, pendead=PM, brushlive=BV, brushdead=BM}}.
 
 setcell(Etat,Cell) ->
@@ -88,10 +87,7 @@ enable() ->
 %% Sync event from callback events, paint event must be handled in callbacks
 %% otherwise nothing will be drawn on windows.
 handle_sync_event(#wx{event = #wxPaint{}}, _wxObj, #state{panel=Panel, memoryDC=MDC, w=W, h=H}) ->
-    DC = wxPaintDC:new(Panel),	
-    redraw(DC,MDC,W,H),
-    wxPaintDC:destroy(DC),
-    ok.
+    redraw(Panel,MDC,W,H).
 
 handle_info(M,S = #state{frame=F}) -> 
     M1 = io_lib:format("Received unexpected message ~p",[M]),
@@ -213,7 +209,6 @@ fill_window(W,H,Frame,Z) ->
     wxWindow:connect(Board, command_button_clicked),
     wxSizer:layout(MainSz),
 
-	ClientDC = wxClientDC:new(Panel),
 	Bitmap = wxBitmap:new(W,H),
 	PM = wxPen:new(color(dead), [{width, 1}]),
 	PV = wxPen:new(color(live), [{width, 1}]),
@@ -232,18 +227,20 @@ fill_window(W,H,Frame,Z) ->
 	wxDC:setPen(MemoryDC,PM),
 	wxDC:setBrush(MemoryDC,BM),
     [cell(MemoryDC, {X,Y},Z) || X <- lists:seq(0,W-1), Y <- lists:seq(0,H-1)],
-    redraw(ClientDC,MemoryDC,W,H),
+    redraw(Panel,MemoryDC,W,H),
 
     wxWindow:refresh(Panel,[{eraseBackground, false}]),
     wxWindow:show(Frame),
-    {Frame, Panel, Bitmap, ClientDC, MemoryDC, PV, PM, BV, BM}.
+    {Frame, Panel, Bitmap, MemoryDC, PV, PM, BV, BM}.
 
 color(live) -> {255,255,255};
 color(dead) -> {80,80,80};
 color(background) -> {0,0,40}.
 
-redraw(DC, MemoryDC, W, H) ->
-    wxDC:blit(DC,{0,0},{W,H},MemoryDC,{0,0}).
+redraw(Panel, MemoryDC, W, H) ->
+    DC = wxPaintDC:new(Panel),  
+    wxDC:blit(DC,{0,0},{W,H},MemoryDC,{0,0}),
+    wxPaintDC:destroy(DC).
 
 keypress(?FAST,_F) ->
 	lavie_fsm:faster(),
