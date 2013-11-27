@@ -15,12 +15,17 @@
 <p><b>Behaviours:</b> <a href="wx_object.html"><tt>wx_object</tt></a>.</p>
 
 <h2><a name="index">Function Index</a></h2>
-<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#affiche-2">affiche/2</a></td><td></td></tr>
-<tr><td valign="top"><a href="#cell-2">cell/2*</a></td><td></td></tr>
+<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#accesfichier-3">accesfichier/3*</a></td><td></td></tr>
+<tr><td valign="top"><a href="#cell-3">cell/3*</a></td><td></td></tr>
+<tr><td valign="top"><a href="#cell-8">cell/8*</a></td><td></td></tr>
+<tr><td valign="top"><a href="#changerule-0">changerule/0*</a></td><td></td></tr>
 <tr><td valign="top"><a href="#code_change-3">code_change/3</a></td><td></td></tr>
 <tr><td valign="top"><a href="#color-1">color/1*</a></td><td></td></tr>
-<tr><td valign="top"><a href="#create_window-2">create_window/2*</a></td><td></td></tr>
-<tr><td valign="top"><a href="#fill_window-3">fill_window/3*</a></td><td></td></tr>
+<tr><td valign="top"><a href="#create_window-3">create_window/3*</a></td><td></td></tr>
+<tr><td valign="top"><a href="#do_refresh-8">do_refresh/8*</a></td><td></td></tr>
+<tr><td valign="top"><a href="#enable-0">enable/0</a></td><td></td></tr>
+<tr><td valign="top"><a href="#enable-1">enable/1*</a></td><td></td></tr>
+<tr><td valign="top"><a href="#fill_window-4">fill_window/4*</a></td><td></td></tr>
 <tr><td valign="top"><a href="#handle_call-3">handle_call/3</a></td><td></td></tr>
 <tr><td valign="top"><a href="#handle_cast-2">handle_cast/2</a></td><td></td></tr>
 <tr><td valign="top"><a href="#handle_event-2">handle_event/2</a></td><td></td></tr>
@@ -28,27 +33,36 @@
 <tr><td valign="top"><a href="#handle_sync_event-3">handle_sync_event/3</a></td><td></td></tr>
 <tr><td valign="top"><a href="#info-1">info/1</a></td><td></td></tr>
 <tr><td valign="top"><a href="#init-1">init/1</a></td><td></td></tr>
-<tr><td valign="top"><a href="#keypress-1">keypress/1*</a></td><td></td></tr>
+<tr><td valign="top"><a href="#keypress-2">keypress/2*</a></td><td></td></tr>
 <tr><td valign="top"><a href="#redraw-4">redraw/4*</a></td><td></td></tr>
-<tr><td valign="top"><a href="#redraw-9">redraw/9*</a></td><td></td></tr>
 <tr><td valign="top"><a href="#refresh-0">refresh/0</a></td><td></td></tr>
+<tr><td valign="top"><a href="#refreshtoggle-1">refreshtoggle/1</a></td><td></td></tr>
 <tr><td valign="top"><a href="#setcell-2">setcell/2</a></td><td></td></tr>
-<tr><td valign="top"><a href="#setcell-6">setcell/6*</a></td><td></td></tr>
 <tr><td valign="top"><a href="#start_link-0">start_link/0</a></td><td></td></tr>
-<tr><td valign="top"><a href="#start_link-2">start_link/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#start_link-3">start_link/3</a></td><td></td></tr>
 <tr><td valign="top"><a href="#terminate-2">terminate/2</a></td><td></td></tr>
 </table>
 
 <h2><a name="functions">Function Details</a></h2>
 
-<h3 class="function"><a name="affiche-2">affiche/2</a></h3>
+<h3 class="function"><a name="accesfichier-3">accesfichier/3 *</a></h3>
 <div class="spec">
-<p><tt>affiche(Live, Dead) -&gt; any()</tt></p>
+<p><tt>accesfichier(Titre, Id, Style) -&gt; any()</tt></p>
 </div>
 
-<h3 class="function"><a name="cell-2">cell/2 *</a></h3>
+<h3 class="function"><a name="cell-3">cell/3 *</a></h3>
 <div class="spec">
-<p><tt>cell(DC, X2) -&gt; any()</tt></p>
+<p><tt>cell(MemoryDC, X2, Z) -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="cell-8">cell/8 *</a></h3>
+<div class="spec">
+<p><tt>cell(MemoryDC, PV, BV, PM, BM, X6, X7, Z) -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="changerule-0">changerule/0 *</a></h3>
+<div class="spec">
+<p><tt>changerule() -&gt; any()</tt></p>
 </div>
 
 <h3 class="function"><a name="code_change-3">code_change/3</a></h3>
@@ -61,14 +75,29 @@
 <p><tt>color(X1) -&gt; any()</tt></p>
 </div>
 
-<h3 class="function"><a name="create_window-2">create_window/2 *</a></h3>
+<h3 class="function"><a name="create_window-3">create_window/3 *</a></h3>
 <div class="spec">
-<p><tt>create_window(W1, H1) -&gt; any()</tt></p>
+<p><tt>create_window(W1, H1, Z) -&gt; any()</tt></p>
 </div>
 
-<h3 class="function"><a name="fill_window-3">fill_window/3 *</a></h3>
+<h3 class="function"><a name="do_refresh-8">do_refresh/8 *</a></h3>
 <div class="spec">
-<p><tt>fill_window(W, H, Frame) -&gt; any()</tt></p>
+<p><tt>do_refresh(Cb, Z, PV, PM, BV, BM, P, MemoryDC) -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="enable-0">enable/0</a></h3>
+<div class="spec">
+<p><tt>enable() -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="enable-1">enable/1 *</a></h3>
+<div class="spec">
+<p><tt>enable(F) -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="fill_window-4">fill_window/4 *</a></h3>
+<div class="spec">
+<p><tt>fill_window(W, H, Frame, Z) -&gt; any()</tt></p>
 </div>
 
 <h3 class="function"><a name="handle_call-3">handle_call/3</a></h3>
@@ -106,19 +135,14 @@
 <p><tt>init(X1) -&gt; any()</tt></p>
 </div>
 
-<h3 class="function"><a name="keypress-1">keypress/1 *</a></h3>
+<h3 class="function"><a name="keypress-2">keypress/2 *</a></h3>
 <div class="spec">
-<p><tt>keypress(X1) -&gt; any()</tt></p>
+<p><tt>keypress(X1, F) -&gt; any()</tt></p>
 </div>
 
 <h3 class="function"><a name="redraw-4">redraw/4 *</a></h3>
 <div class="spec">
-<p><tt>redraw(DC, Bitmap, W, H) -&gt; any()</tt></p>
-</div>
-
-<h3 class="function"><a name="redraw-9">redraw/9 *</a></h3>
-<div class="spec">
-<p><tt>redraw(Panel, DC, Bitmap, Live, Dead, W, H, PV, PM) -&gt; any()</tt></p>
+<p><tt>redraw(Panel, MemoryDC, W, H) -&gt; any()</tt></p>
 </div>
 
 <h3 class="function"><a name="refresh-0">refresh/0</a></h3>
@@ -126,14 +150,14 @@
 <p><tt>refresh() -&gt; any()</tt></p>
 </div>
 
+<h3 class="function"><a name="refreshtoggle-1">refreshtoggle/1</a></h3>
+<div class="spec">
+<p><tt>refreshtoggle(X1) -&gt; any()</tt></p>
+</div>
+
 <h3 class="function"><a name="setcell-2">setcell/2</a></h3>
 <div class="spec">
 <p><tt>setcell(Etat, Cell) -&gt; any()</tt></p>
-</div>
-
-<h3 class="function"><a name="setcell-6">setcell/6 *</a></h3>
-<div class="spec">
-<p><tt>setcell(DC, Pen, Cell, Bitmap, W, H) -&gt; any()</tt></p>
 </div>
 
 <h3 class="function"><a name="start_link-0">start_link/0</a></h3>
@@ -141,9 +165,9 @@
 <p><tt>start_link() -&gt; any()</tt></p>
 </div>
 
-<h3 class="function"><a name="start_link-2">start_link/2</a></h3>
+<h3 class="function"><a name="start_link-3">start_link/3</a></h3>
 <div class="spec">
-<p><tt>start_link(W, H) -&gt; any()</tt></p>
+<p><tt>start_link(W, H, Z) -&gt; any()</tt></p>
 </div>
 
 <h3 class="function"><a name="terminate-2">terminate/2</a></h3>
@@ -153,6 +177,6 @@
 <hr>
 
 <div class="navbar"><a name="#navbar_bottom"></a><table width="100%" border="0" cellspacing="0" cellpadding="2" summary="navigation bar"><tr><td><a href="overview-summary.html" target="overviewFrame">Overview</a></td><td><a href="http://www.erlang.org/"><img src="erlang.png" align="right" border="0" alt="erlang logo"></a></td></tr></table></div>
-<p><i>Generated by EDoc, Sep 2 2013, 10:01:19.</i></p>
+<p><i>Generated by EDoc, Nov 27 2013, 15:17:46.</i></p>
 </body>
 </html>

@@ -1,3 +1,5 @@
+%% encoding: UTF-8
 {application,lavie}.
 {packages,[]}.
-{modules,[cell,lavie,lavie_app,lavie_fsm,lavie_server,lavie_sup,lavie_wx]}.
+{modules,[cell,lavie,lavie_app,lavie_fsm,lavie_server,lavie_sup,lavie_wx,
+          rule_wx]}.

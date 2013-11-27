@@ -117,18 +117,20 @@ start_link(W,H) ->
 %% @doc
 %% Initializes the server
 %%
-%% @spec init([integer(),integer()]) -> {ok, State}
-%% -record(state, {	init=false, quand il vaut vrai, interdit la modification de la configuration (br,sr,livefun,birdthfun), plus vraiment utilise 
-%%					br=?BR, grand rayon du tore
-%%					sr=?SR, petit rayon do tore
-%%					birdth, Match spec utilise pour selectionner les cellules eligibles pour une naissance
-%%					clean, Match spec utilise pour nettoyer la table (cellule vide qui on un compte voisin non nul)
-%%					alive, Match spec utilise pour selectionner les cellules vivantes
-%%					info=0,	nb de messages done_info restant a recevoir
-%%					update=0, nb de messages done_update restant a recevoir
-%%					born=0, nb de messages born restant a recevoir
-%%					livefun, fonction a passer aux cellules pour determiner si elles vont suvivre le prochain tour
-%%					birdthfun}). foction pour determiner si une case elligible va voir une naissance
+%% le resultat contient un record de type state:
+%% 		init def false	: quand il vaut vrai, interdit la modification de la configuration (br,sr,livefun,birdthfun), plus vraiment utilise 
+%%		br def ?BR		: grand rayon du tore
+%%		sr def ?SR		: petit rayon do tore
+%%		birdth 			: Match spec utilise pour selectionner les cellules eligibles pour une naissance
+%%		clean			: Match spec utilise pour nettoyer la table (cellule vide qui on un compte voisin non nul)
+%%		alive			: Match spec utilise pour selectionner les cellules vivantes
+%%		info def 0		: nb de messages done_info restant a recevoir
+%%		update def 0	: nb de messages done_update restant a recevoir
+%%		born def 0		: nb de messages born restant a recevoir
+%%		livefun			: fonction a passer aux cellules pour determiner si elles vont suvivre le prochain tour
+%%		birdthfun		: fonction pour determiner si une case elligible va voir une naissance
+%%
+%% @spec init([integer()]) -> {ok, tupple()}
 %% @end
 %%--------------------------------------------------------------------
 init([W,H]) ->
