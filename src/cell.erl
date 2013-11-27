@@ -38,7 +38,7 @@ cast(P,Msg) ->
 %% @doc
 %% Starts the server
 %%
-%% @spec start(integer(),integer(),[tuple()]) -> {ok, Pid} | ignore | {error, Error}
+%% @spec start(integer(),integer(),[tuple()],tuple(),fun()) -> {ok, Pid} | ignore | {error, Error}
 %% @end
 %%--------------------------------------------------------------------
 start(X,Y,Neighbors,Rand,Live) ->

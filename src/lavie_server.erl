@@ -117,7 +117,7 @@ start_link(W,H) ->
 %% @doc
 %% Initializes the server
 %%
-%% @spec init([Width,Height]) -> {ok, State}
+%% @spec init([integer(),integer()]) -> {ok, State}
 %% -record(state, {	init=false, quand il vaut vrai, interdit la modification de la configuration (br,sr,livefun,birdthfun), plus vraiment utilise 
 %%					br=?BR, grand rayon du tore
 %%					sr=?SR, petit rayon do tore
