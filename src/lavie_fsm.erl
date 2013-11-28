@@ -155,12 +155,14 @@ wait_born_finished(born_finished, #state{generation=A,standby=true} = State) ->
         lavie_wx:refreshtoggle(true),
         lavie_wx:info(io_lib:format("standby   -> generation ~p",[A])),
         {next_state, standby, State#state{do_read=false,do_save=false}};
-wait_born_finished(born_finished, State) when   State#state.endCycle == true ->
+wait_born_finished(born_finished, #state{generation=A,endCycle=true} = State)  ->
         lavie_wx:refresh(),
         wait_20ms(),
+        lavie_wx:info(io_lib:format("standby   -> generation ~p",[A])),
         {next_state, idle, State#state{endCycle=false}};
-wait_born_finished(born_finished, State) ->
+wait_born_finished(born_finished, #state{generation=A} = State) ->
         lavie_wx:refresh(),
+        lavie_wx:info(io_lib:format("standby   -> generation ~p",[A])),
         {next_state, wait_cycle, State}.
 
 idle(done20ms,#state{generation=A} = State) ->

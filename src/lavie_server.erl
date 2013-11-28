@@ -42,7 +42,7 @@
 -define (SR , 50).
 
 
--record(state, {init=false,br=?BR,sr=?SR,birdth,clean,alive,info=0,update=0,born=0,livefun,birdthfun}).
+-record(state, {init=false,br=?BR,sr=?SR,birdth,clean,alive,info=0,update=0,born=0,livefun,birdthfun,rulelive=[{2,1},{3,1}],rulebirdth=[{3,1}]}).
 
 %%%===================================================================
 %%% API
@@ -132,16 +132,17 @@ start_link(W,H) ->
 %% @end
 %%--------------------------------------------------------------------
 init([W,H]) ->
-	Rulea=[{2,1},{3,1}],
-	Ruleb=[{3,1}],
+%	Rulea=[{2,1},{3,1}],
+%	Ruleb=[{3,1}],
 	random:seed(erlang:now()),
 	Birdth_MS = ets:fun2ms(fun({X,empty,N,C}) when C >= 2, C =< 4 -> {X,N,C} end),
 	Clean_MS = ets:fun2ms(fun({X,_,_,N}) when N =/= 0 -> X end),
 	Alive_MS = ets:fun2ms(fun({X,P,_,_}) when is_pid(P) -> P end),
 	do_create_world(W,H),
-	Fa =fun({_,_,_,N}) -> live(N,Rulea) end,
-	Fb =fun(X) -> birdth(X,Ruleb) end,
-    {ok, #state{clean=Clean_MS,birdth=Birdth_MS,alive=Alive_MS,br=W,sr=H,livefun=Fa,birdthfun=Fb}}.
+	State = #state{clean=Clean_MS,birdth=Birdth_MS,alive=Alive_MS,br=W,sr=H},
+	Fa =fun({_,_,_,N}) -> live(N,State#state.rulelive) end,
+	Fb =fun(X) -> birdth(X,State#state.rulebirdth) end,
+    {ok, State#state{livefun=Fa,birdthfun=Fb}}.
 
 
 %%--------------------------------------------------------------------
@@ -177,7 +178,7 @@ handle_call({read,Fi}, _From, #state{livefun=F,br=Br,sr=Sr} = State) ->
         {reply, {value,Reply}, State};		
 handle_call(getrule, _From, State) ->
 	io:format("getrule in server~n"),
-		Reply = ok,
+		Reply = {State#state.rulelive,State#state.rulebirdth},
         {reply, {value,Reply}, State};
 handle_call(_Request, _From, State) ->
         Reply = ok,

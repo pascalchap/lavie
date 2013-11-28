@@ -3,6 +3,8 @@
 -define(CHILD,201).
 -define(WSTORE,202).
 -define(WREAD,203).
+-define(GRDLIVE,204).
+-define(GRDBORN,205).
 
 -define(FAST,100).
 -define(SLOW,101).
