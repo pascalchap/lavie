@@ -111,6 +111,8 @@ handle_cast({cast,update}, #state{x=X,y=Y} = State) ->
 		R=do_update(X,Y,State),
 		lavie_server:done_update(),
 		R;
+handle_cast({cast,{newFunc,Fa}}, State) -> 
+		{noreply, State#state{livefun=Fa}};
 handle_cast(Msg, State) ->
 		io:format("ignore ~p~n",[Msg]),
         {noreply, State}.
