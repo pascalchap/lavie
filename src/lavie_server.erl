@@ -27,7 +27,8 @@
 		config/0,
 		save/1,
 		read/1,
-		getrule/0]).
+		getrule/0,
+		setrule/2]).
 
 %% gen_server callbacks
 -export([init/1,
@@ -93,6 +94,10 @@ save(F) ->
 	gen_server:call(?SERVER,{save,F}).
 getrule() ->
 	gen_server:call(?SERVER,getrule).
+setrule(La,Lb) ->
+	gen_server:cast(?SERVER,{setrule,La,Lb}).
+
+
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -135,7 +140,7 @@ init([W,H]) ->
 %	Rulea=[{2,1},{3,1}],
 %	Ruleb=[{3,1}],
 	random:seed(erlang:now()),
-	Birdth_MS = ets:fun2ms(fun({X,empty,N,C}) when C >= 2, C =< 4 -> {X,N,C} end),
+	Birdth_MS = ets:fun2ms(fun({X,empty,N,C}) -> {X,N,C} end),
 	Clean_MS = ets:fun2ms(fun({X,_,_,N}) when N =/= 0 -> X end),
 	Alive_MS = ets:fun2ms(fun({X,P,_,_}) when is_pid(P) -> P end),
 	do_create_world(W,H),
@@ -259,6 +264,11 @@ handle_cast(born_finished, State) when State#state.init == true ->
     {noreply, State};
 handle_cast(config, State) ->
     {noreply, State#state{init=false}};
+handle_cast({setrule,Ra,Rb}, State) ->
+	Fa =fun({_,_,_,N}) -> live(N,Ra) end,
+	Fb =fun(X) -> birdth(X,Rb) end,
+	multicast({newFunc,Fa}),
+    {noreply, State#state{livefun=Fa,birdthfun=Fb,rulelive=Ra,rulebirdth=Rb}};
 handle_cast(Msg, State) ->
 	io:format("ignore message : ~p~n",[Msg]),
     {noreply, State}.

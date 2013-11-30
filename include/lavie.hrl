@@ -12,6 +12,8 @@
 -define(STORE,103).
 -define(READ,104).
 -define(RULE,105).
+-define(VALID,106).
+-define(CANCEL,107).
 
 %button definition
 % main window
@@ -21,7 +23,10 @@
 -define(B_RUN,{?RUN,"marche/arret"}).
 -define(B_STORE,{?STORE,"enregistrer"}).
 -define(B_READ,{?READ,"lire"}).
--define(B_RULE,{?RULE,"changer les regles"}).
+-define(B_RULE,{?RULE,"regles"}).
 -define(BLIST,[?B_FAST,?B_RUN,?B_SLOW,?B_STORE,?B_READ,?B_RULE]).
+
+-define(B_VALID,{?VALID,"valider"}).
+-define(B_CANCEL,{?CANCEL,"annuler"}).
 
 % rule window
